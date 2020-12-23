@@ -1,4 +1,3 @@
-#include<stdio.h>
 #include"connect4.h"
 int main(){
   FILE *infile,*outfile;
@@ -9,9 +8,11 @@ int main(){
   fclose(infile);
 
   write_out_file(stdout,my_board);
-   
+
+  return 0;
+
   while(current_winner(my_board)=='.') {
-    struct move next_move = read_in_move();
+    struct move next_move = read_in_move(my_board);
     if (is_valid_move(next_move,my_board)) {
     play_move(next_move,my_board);
     write_out_file(stdout,my_board);
