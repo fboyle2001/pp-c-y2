@@ -50,6 +50,11 @@ void read_in_file(FILE *infile, board u){
   int rowLength = 0;
 
   while(fscanf(infile, "%c", &readInChar) != EOF) {
+    if(readInChar == '\r') {
+      printf("RUN DOS2UNIX!\n");
+      exit(-1);
+    }
+
     if(readInChar == '\n') {
       if(charactersPerRow == -1) {
         charactersPerRow = rowLength;
@@ -59,8 +64,6 @@ void read_in_file(FILE *infile, board u){
           exit(-1);
         }
       }
-
-      printf("charactersPerRow, %d", rowLength);
 
       numberOfRows++;
       char** tempBoardPointer = realloc(boardData, sizeof(char) * charactersPerRow * numberOfRows);
@@ -95,6 +98,7 @@ void read_in_file(FILE *infile, board u){
   u->toMove = 0;
   u->rows = numberOfRows;
   u->columns = charactersPerRow;
+  apply_gravity(u);
 }
 
 void write_out_file(FILE *outfile, board u){
@@ -111,28 +115,114 @@ char next_player(board u){
   return u->toMove == 0 ? 'x' : 'o';
 }
 
+// TODO
 char current_winner(board u){
-//You may put code here
+  return '.';
 }
 
 struct move read_in_move(board u){
-//You may put code here
   printf("Player %c enter column to place your token: ",next_player(u)); //Do not edit this line
-//You may put code here
+
+  int column;
+  int scanfResult = scanf("%d", &column);
+
+  if(scanfResult == 0) {
+    fprintf(stderr, "Column must be an integer\n");
+    exit(1);
+  }
+
   printf("Player %c enter row to rotate: ",next_player(u)); // Do not edit this line
-//You may put code here
+
+  int row;
+  scanfResult = scanf("%d", &row);
+
+  if(scanfResult == 0) {
+    fprintf(stderr, "Row must be an integer\n");
+    exit(1);
+  }
+
+  // Don't do any checking or normalisation here
+
+  struct move inputtedMove = { .column = column, .row = row };
+  return inputtedMove;
 }
 
 int is_valid_move(struct move m, board u){
-//You may put code here
+  // 1 <= m.column <= u->columns
+  if(m.column > u->columns) {
+    return 0;
+  }
+
+  if(m.column < 1) {
+    return 0;
+  }
+
+  int positiveRow = m.row;
+
+  if(positiveRow < 0) {
+    positiveRow *= -1;
+  }
+
+  // 0 = NO ROTATE, 1 <= positiveRow <= u->rows
+  if(positiveRow > u->rows) {
+    return 0;
+  }
+
+  // Shouldn't be possible but whatever
+  if(positiveRow < 0) {
+    return 0;
+  }
+
+  // Now lets check they can actually drop in the column (e.g. it's not full)
+
+  char* columnData = get_column(u, m.column - 1);
+
+  // If the top element isn't '.' then they can't drop in this column
+  if(columnData[0] != '.') {
+    return 0;
+  }
+
+  //FREE
+
+  return 1;
 }
 
+// TODO
 char is_winning_move(struct move m, board u){
-//You may put code here
+  return 'x';
 }
 
 void play_move(struct move m, board u){
-//You may put code here
+  // Start by fixing the move so we can actually use it with the board structure
+  int column = m.column - 1;
+  int row = m.row;
+  int rowDirection = m.row < 0 ? -1 : (m.row > 0 ? 1 : 0);
+
+  if(row < 0) {
+    row *= -1;
+  }
+
+  // We have the fixed column, positive row (not 0 to rows - 1) and the row direction
+  // We also know they are all valid at this point so lets make the move
+
+  // Drop into the top of the column
+  char* selectedColumn = get_column(u, column);
+  selectedColumn[0] = next_player(u);
+  set_column(u, column, selectedColumn);
+  free(selectedColumn);
+
+  // Now apply gravity
+  apply_gravity(u);
+
+  // If they selected a row to rotate now do it
+  // And apply gravity again
+  if(row != 0) {
+    // u-rows - row will make it match the board structure
+    rotate_row(u, u->rows - row, rowDirection);
+    apply_gravity(u);
+  }
+
+  u->toMove = (u -> toMove + 1) % 2;
 }
 
 //You may put additional functions here if you wish.
@@ -182,13 +272,13 @@ void shift_to_end(char* array, int length) {
 
 // Shifts everything one index and wraps
 // Inline so void return
-void rotate_array(char* array, int length) {
+void rotate_array(char* array, int length, int shift) {
   char copy = array[0];
   char temp;
 
   for(int i = 0; i < length; i++) {
-    temp = array[(i + 1) % length];
-    array[(i + 1) % length] = copy;
+    temp = array[(i + shift) % length];
+    array[(i + shift) % length] = copy;
     copy = temp;
   }
 }
@@ -205,8 +295,8 @@ void apply_gravity(board u) {
   }
 }
 
-void rotate_row(board u, int row) {
-  rotate_array(u->positions[row], u->columns);
+void rotate_row(board u, int row, int direction) {
+  rotate_array(u->positions[row], u->columns, direction < 0 ? -1 : (direction > 0 ? 1 : 0));
 }
 
 // Delete these at the end

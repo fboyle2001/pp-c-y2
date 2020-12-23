@@ -28,9 +28,10 @@ void set_column(board u, int column, char* newColData);
 char* get_row(board u, int row);
 void set_row(board u, int row, char* newRowData);
 void shift_to_end(char* array, int length);
-void rotate_array(char* array, int length);
+void rotate_array(char* array, int length, int shift);
 void apply_gravity(board u);
-void rotate_row(board u, int row);
+void rotate_row(board u, int row, int direction);
+struct move standardise_move(struct move move, board u);
 
 void print_double_array(char** array, int globalLen, int innerLen);
 void print_array(char* array, int length);

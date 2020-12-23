@@ -3,13 +3,12 @@ int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("grav_board.txt","r");
+  infile=fopen("initial_board.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 
   write_out_file(stdout,my_board);
-  cleanup_board(my_board); // remove
-  return 0;
+  //cleanup_board(my_board); // remove
 
   while(current_winner(my_board)=='.') {
     struct move next_move = read_in_move(my_board);
@@ -18,6 +17,8 @@ int main(){
     write_out_file(stdout,my_board);
     }
   }
+
+  return 0;
 
   outfile=fopen("final_board.txt","w");
   write_out_file(outfile,my_board);
