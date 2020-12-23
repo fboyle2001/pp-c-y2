@@ -36,6 +36,7 @@ void cleanup_board(board u){
   free(u);
 }
 
+// MAKE SURE TO dos2unix THE TEXT FILE!!! WILL RUIN ARRAY LENGTH
 void read_in_file(FILE *infile, board u){
   //You may put code here
   // Board data
@@ -59,6 +60,8 @@ void read_in_file(FILE *infile, board u){
         }
       }
 
+      printf("charactersPerRow, %d", rowLength);
+
       numberOfRows++;
       char** tempBoardPointer = realloc(boardData, sizeof(char) * charactersPerRow * numberOfRows);
 
@@ -72,7 +75,6 @@ void read_in_file(FILE *infile, board u){
 
       // Clean up for next row
       rowLength = 0;
-      // free(rowArray); // is this needed?? might break stuff actually
       rowArray = NULL;
       continue;
     }
@@ -146,17 +148,73 @@ char* get_column(board u, int column) {
   return colData;
 }
 
-void update_column(board u, int column, char* newColData) {
+void set_column(board u, int column, char* newColData) {
   for(int row = 0; row < u->rows; row++) {
     u->positions[row][column] = newColData[row];
   }
+}
+
+// Takes an array, shifts to the end and removes gaps between elements while maintaining length
+// Works inline without taking any more memory than a few vars to track
+void shift_to_end(char* array, int length) {
+  int filledSpaces = 0;
+  int moved = 1;
+  int i, shiftIndex;
+
+  while(moved == 1) {
+    moved = 0;
+
+    for(i = length - 1 - filledSpaces; i >= 0; i--) {
+      if(array[i] != '.') {
+        shiftIndex = length - 1 - filledSpaces;
+        array[shiftIndex] = array[i];
+
+        if(shiftIndex != i) {
+          array[i] = '.';
+        }
+
+        moved = 1;
+        filledSpaces++;
+      }
+    }
+  }
+}
+
+// Shifts everything one index and wraps
+// Inline so void return
+void rotate_array(char* array, int length) {
+  char copy = array[0];
+  char temp;
+
+  for(int i = 0; i < length; i++) {
+    temp = array[(i + 1) % length];
+    array[(i + 1) % length] = copy;
+    copy = temp;
+  }
+}
+
+// Applies gravity to the board
+void apply_gravity(board u) {
+  char* colData = NULL;
+
+  for(int col = 0; col < u->columns; col++) {
+    colData = get_column(u, col);
+    shift_to_end(colData, u->rows);
+    set_column(u, col, colData);
+    free(colData);
+  }
+}
+
+void rotate_row(board u, int row) {
+  rotate_array(u->positions[row], u->columns);
 }
 
 // Delete these at the end
 
 void print_col(board u, int column) {
   char* colData = get_column(u, column);
-  print_array(colData, u->rows);
+  //print_array(colData, u->rows);
+  free(colData);
 }
 
 void print_array(char* array, int length) {

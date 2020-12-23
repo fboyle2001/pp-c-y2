@@ -24,7 +24,13 @@ char next_player(board u);
 // Delete these
 
 char* get_column(board u, int column);
-void update_column(board u, int column, char* newColData);
+void set_column(board u, int column, char* newColData);
+char* get_row(board u, int row);
+void set_row(board u, int row, char* newRowData);
+void shift_to_end(char* array, int length);
+void rotate_array(char* array, int length);
+void apply_gravity(board u);
+void rotate_row(board u, int row);
 
 void print_double_array(char** array, int globalLen, int innerLen);
 void print_array(char* array, int length);
