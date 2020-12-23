@@ -3,12 +3,13 @@ int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("initial_board.txt","r");
+  infile=fopen("col_board.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 
   write_out_file(stdout,my_board);
 
+  cleanup_board(my_board); // remove
   return 0;
 
   while(current_winner(my_board)=='.') {

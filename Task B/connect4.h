@@ -20,3 +20,12 @@ void play_move(struct move m, board u);
 
 char current_winner(board u);
 char next_player(board u);
+
+// Delete these
+
+char* get_column(board u, int column);
+void update_column(board u, int column, char* newColData);
+
+void print_double_array(char** array, int globalLen, int innerLen);
+void print_array(char* array, int length);
+void print_col(board u, int column);

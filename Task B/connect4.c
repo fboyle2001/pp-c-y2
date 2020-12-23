@@ -17,7 +17,7 @@ struct board_structure {
 
 board setup_board() {
   // we typedef to a pointer so malloc it
-  board board = malloc(sizeof(board));
+  board board = malloc(sizeof(*board));
 
   board->positions = NULL;
   board->toMove = 0;
@@ -28,7 +28,11 @@ board setup_board() {
 }
 
 void cleanup_board(board u){
-  //You may put code here
+  for(int i = 0; i < u->rows; i++) {
+    free(u->positions[i]);
+  }
+
+  free(u->positions);
   free(u);
 }
 
@@ -102,7 +106,7 @@ void write_out_file(FILE *outfile, board u){
 }
 
 char next_player(board u){
-//You may put code here
+  return u->toMove == 0 ? 'x' : 'o';
 }
 
 char current_winner(board u){
@@ -130,6 +134,30 @@ void play_move(struct move m, board u){
 }
 
 //You may put additional functions here if you wish.
+
+char* get_column(board u, int column) {
+  // no. of rows here since depth of a column = rows
+  char* colData = malloc(sizeof(char) * u->rows);
+
+  for(int row = 0; row < u->rows; row++) {
+    colData[row] = u->positions[row][column];
+  }
+
+  return colData;
+}
+
+void update_column(board u, int column, char* newColData) {
+  for(int row = 0; row < u->rows; row++) {
+    u->positions[row][column] = newColData[row];
+  }
+}
+
+// Delete these at the end
+
+void print_col(board u, int column) {
+  char* colData = get_column(u, column);
+  print_array(colData, u->rows);
+}
 
 void print_array(char* array, int length) {
   for(int i = 0; i < length; i++) {
