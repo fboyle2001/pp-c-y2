@@ -8,7 +8,6 @@ int main(){
   fclose(infile);
 
   write_out_file(stdout,my_board);
-  //cleanup_board(my_board); // remove
 
   while(current_winner(my_board)=='.') {
     struct move next_move = read_in_move(my_board);
@@ -17,8 +16,6 @@ int main(){
     write_out_file(stdout,my_board);
     }
   }
-
-  return 0;
 
   outfile=fopen("final_board.txt","w");
   write_out_file(outfile,my_board);

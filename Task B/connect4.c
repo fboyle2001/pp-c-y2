@@ -7,12 +7,18 @@
 
 void print_double_array(char** array, int globalLen, int innerLen);
 void print_array(char* array, int length);
+struct diagonal get_diagonal(board u, int row, int column, int direction);
 
 struct board_structure {
   char** positions;
   int toMove;
   int rows;
   int columns;
+};
+
+struct diagonal {
+  char* data;
+  int length;
 };
 
 board setup_board() {
@@ -60,6 +66,7 @@ void read_in_file(FILE *infile, board u){
         charactersPerRow = rowLength;
       } else {
         if(charactersPerRow != rowLength) {
+          printf("%d %d %d", numberOfRows, charactersPerRow, rowLength);
           printf("Non-matched lengths");
           exit(-1);
         }
@@ -117,6 +124,153 @@ char next_player(board u){
 
 // TODO
 char current_winner(board u){
+  /*
+  * Need to check:
+  * columns (no wrapping)
+  * rows (with wrapping)
+  * diagonals (no wrapping)
+  * Also need to check for draws
+  */
+
+  int hasXWon = 0;
+  int hasOWon = 0;
+
+  char* colData = NULL;
+  char lastSeen = '.';
+  int run = 0;
+
+  // Check columns
+  for(int col = 0; col < u->columns; col++) {
+    colData = get_column(u, col);
+
+    for(int i = 0; i < u->rows; i++) {
+      char pos = colData[i];
+
+      // If we are on a run of the same type and it's not blanks
+      if(pos == lastSeen && lastSeen != '.') {
+        // Increment the run
+        run++;
+
+        // If we now have 4 they have won
+        if(run == 4) {
+          if(lastSeen == 'x') {
+            hasXWon = 1;
+          } else if (lastSeen == 'o') {
+            hasOWon = 1;
+          }
+        }
+      } else {
+        // Otherwise reset the run
+        lastSeen = pos;
+        run = 1;
+      }
+    }
+
+    free(colData);
+    colData = NULL;
+  }
+
+  char* rowData;
+  lastSeen = '.';
+  run = 0;
+
+  // Check rows need to take with wrapping
+  for(int row = 0; row < u->rows; row++) {
+    rowData = u->positions[row];
+
+    // This handles non-wrapping cases
+    for(int i = 0; i < u->columns; i++) {
+      char pos = rowData[i];
+
+      // If we are on a run of the same type and it's not blanks
+      if(pos == lastSeen && lastSeen != '.') {
+        // Increment the run
+        run++;
+
+        // If we now have 4 they have won
+        if(run == 4) {
+          if(lastSeen == 'x') {
+            hasXWon = 1;
+          } else if (lastSeen == 'o') {
+            hasOWon = 1;
+          }
+        }
+      } else {
+        // Otherwise reset the run
+        lastSeen = pos;
+        run = 1;
+      }
+    }
+
+    // Now handle the wrapping cases
+    // The possibilites are [][][][][][][][][]
+    // 0, 1, 2, 3... (No)
+    // Len-1, 0, 1, 2
+    // Len-2, Len-1, 0, 1
+    // Len-3, Len-2, Len-1, 0
+    // ...Len-4, Len-3, Len-2, Len-1 (No)
+
+    for(int start = u->columns - 4; start < u->columns; start++) {
+      if(rowData[start % u->columns] == rowData[(start + 1) % u->columns] && rowData[(start + 1) % u->columns] == rowData[(start + 2) % u->columns] && rowData[(start + 2) % u->columns] == rowData[(start + 3) % u->columns]) {
+        if(rowData[start % u->columns] == 'x') {
+          hasXWon = 1;
+        } else if (rowData[start % u->columns] == 'o') {
+          hasOWon = 1;
+        }
+      }
+    }
+
+    rowData = NULL;
+  }
+
+  // Finally check diagonals, going to be a bit difficult but no need for wrapping
+  // The get_diagonal will return the diagonals
+
+  for(int i = 0; i < u->columns; i++) {
+    struct diagonal left_diagonal = get_diagonal(u, u->rows - 1, i, -1);
+    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
+
+    // If it's less than 4 then they can't win on the diagonal
+    if(left_diagonal.length >= 4) {
+      for(int start = 0; start < left_diagonal.length - 3; start++) {
+        if(left_diagonal.data[start] == left_diagonal.data[start + 1] && left_diagonal.data[start + 1] == left_diagonal.data[start + 2] && left_diagonal.data[start + 2] == left_diagonal.data[start + 3]) {
+          if(left_diagonal.data[start] == 'x') {
+            hasXWon = 1;
+          } else if (left_diagonal.data[start] == 'o') {
+            hasOWon = 1;
+          }
+        }
+      }
+    }
+
+    // If it's less than 4 then they can't win on the diagonal
+    if(right_diagonal.length >= 4) {
+      for(int start = 0; start < right_diagonal.length - 3; start++) {
+        if(right_diagonal.data[start] == right_diagonal.data[start + 1] && right_diagonal.data[start + 1] == right_diagonal.data[start + 2] && right_diagonal.data[start + 2] == right_diagonal.data[start + 3]) {
+          if(right_diagonal.data[start] == 'x') {
+            hasXWon = 1;
+          } else if (right_diagonal.data[start] == 'o') {
+            hasOWon = 1;
+          }
+        }
+      }
+    }
+
+    // Need to free
+  }
+
+  if(hasXWon == 1 && hasOWon == 1) {
+    return 'd';
+  }
+
+  if(hasXWon == 1) {
+    return 'x';
+  }
+
+  if(hasOWon == 1) {
+    return 'o';
+  }
+
   return '.';
 }
 
@@ -299,12 +453,40 @@ void rotate_row(board u, int row, int direction) {
   rotate_array(u->positions[row], u->columns, direction < 0 ? -1 : (direction > 0 ? 1 : 0));
 }
 
+struct diagonal get_diagonal(board u, int row, int column, int direction) {
+  char* diagonal = NULL;
+  int diagonalLength = 0;
+
+  while(row != -1) {
+    diagonalLength++;
+    diagonal = realloc(diagonal, sizeof(char) * diagonalLength);
+    diagonal[diagonalLength - 1] = u->positions[row][column];
+    row -= 1;
+    column += direction;
+    column %= u->columns;
+
+    // % doesn't handle negatives as expected
+    if(column < 0) {
+      column = column + u->columns;
+    }
+  }
+
+  struct diagonal returnDiagonal = { .data = diagonal, .length = diagonalLength };
+  return returnDiagonal;
+}
+
 // Delete these at the end
 
 void print_col(board u, int column) {
   char* colData = get_column(u, column);
-  //print_array(colData, u->rows);
+  print_array(colData, u->rows);
   free(colData);
+}
+
+void print_diagonal(board u, int row, int column, int direction) {
+  struct diagonal diagonal = get_diagonal(u, row, column, direction);
+  print_array(diagonal.data, diagonal.length);
+  free(diagonal.data);
 }
 
 void print_array(char* array, int length) {

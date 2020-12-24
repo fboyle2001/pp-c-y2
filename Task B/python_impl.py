@@ -4,12 +4,12 @@ rows, columns = 6, 8
 
 board = [[0 for x in range(columns)] for y in range(rows)]
 
-board = [[0,   0,   0,   0,   0,   0,   0,   0],
-         [0,   1,   0,   0,   0,   0,   0,   1],
-         [0,  -1,   0,   0,   0,   0,   0,  -1],
-         [0,   1,   0,   0,   0,   0,   0,   1],
-         [0,  -1,   0,   0,   0,   0,   0,  -1],
-         [0,   1,  -1,   0,   1,  -1,   0,   1]]
+board = [[ 0,   0,   0,   0,   0,   0,   0,   0],
+         [ 0,   0,   0,   0,   0,   0,   0,   0],
+         [ 0,   1 ,  0,   0,   0,   0,   0,   0],
+         [ 1,  -1,   0,   0,   0,   0,   0,   0],
+         [-1,   1,   0,   0,   0,   0,  -1,   1],
+         [-1,   1,   0,   0,   0,   0,   1,  -1]]
 
 from pprint import pprint
 
@@ -44,7 +44,7 @@ def shift_to_end(array):
 
                 if shift_index != i:
                     array[i] = 0
-                    
+
                 moved = True
                 filledSpaces += 1
 
@@ -55,7 +55,7 @@ def apply_gravity(board):
         current_col = get_col(board, col)
         shifted_col = shift_to_end(current_col)
         board = set_col(board, col, shifted_col)
-        
+
     return board
 
 def rotate_row(row):
@@ -65,13 +65,13 @@ def rotate_row(row):
         temp = row[(i + 1) % len(row)]
         row[(i + 1) % len(row)] = copy
         copy = temp
-        
+
     return row
 
 def make_move(board, player, drop_column, row_to_rotate):
     # full board
     column = get_col(board, drop_column)
-    
+
     if column[0] != 0:
         return board
 
@@ -92,7 +92,42 @@ def print_board(board):
     mapped_board = [[rev_players[pos] for pos in row] for row in board]
     pprint(mapped_board)
 
+# 1 = LEFT DIAGONAL, -1 = RIGHT DIAGONAL
+def get_right_diagonal(board, row, column):
+    diagonal = []
+    cr, cc = row, column
+
+    while cr != -1:
+        #print(cr, cc)
+        diagonal.append(board[cr][cc])
+        cr -= 1
+        cc += 1
+        cc %= columns;
+
+    return diagonal
+
+def get_left_diagonal(board, row, column):
+    diagonal = []
+    cr, cc = row, column
+
+    while cr != -1:
+        #print(cr, cc)
+        diagonal.append(board[cr][cc])
+        cr -= 1
+        cc -= 1
+        cc %= columns;
+
+    return diagonal
+
 print_board(board)
-# columns are left to right, rows are top to bottm
-board = make_move(board, "o", 3 - 1, rows - 4)
-print_board(board)
+
+for i in range(columns):
+    print((5, i), "left", get_left_diagonal(board, 5, i))
+
+for i in range(columns):
+    print((5, i), "right", get_right_diagonal(board, 5, i))
+
+#pprint(get_left_diagonal(board, 5, 1))
+# # columns are left to right, rows are top to bottm
+# board = make_move(board, "o", 3 - 1, rows - 4)
+# print_board(board)

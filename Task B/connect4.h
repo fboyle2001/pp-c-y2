@@ -36,3 +36,4 @@ struct move standardise_move(struct move move, board u);
 void print_double_array(char** array, int globalLen, int innerLen);
 void print_array(char* array, int length);
 void print_col(board u, int column);
+void print_diagonal(board u, int row, int column, int direction);

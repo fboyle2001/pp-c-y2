@@ -1,0 +1,5 @@
+- Validate input files
+>> figure out whose turn based on counting tiles
+>> check that gravity has already been applied
+- Capitalise winner on output
+- is_winning_move
