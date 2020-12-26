@@ -58,7 +58,7 @@ void read_in_file(FILE *infile, board u){
   while(fscanf(infile, "%c", &readInChar) != EOF) {
     if(readInChar == '\r') {
       printf("RUN DOS2UNIX!\n");
-      exit(-1);
+      exit(1);
     }
 
     if(readInChar == '\n') {
@@ -68,7 +68,7 @@ void read_in_file(FILE *infile, board u){
         if(charactersPerRow != rowLength) {
           printf("%d %d %d", numberOfRows, charactersPerRow, rowLength);
           printf("Non-matched lengths");
-          exit(-1);
+          exit(1);
         }
       }
 
@@ -122,7 +122,6 @@ char next_player(board u){
   return u->toMove == 0 ? 'x' : 'o';
 }
 
-// TODO
 char current_winner(board u){
   /*
   * Need to check:
@@ -220,6 +219,7 @@ char current_winner(board u){
       }
     }
 
+    // free(rowData);
     rowData = NULL;
   }
 
@@ -257,6 +257,8 @@ char current_winner(board u){
     }
 
     // Need to free
+    free(left_diagonal.data);
+    free(right_diagonal.data);
   }
 
   if(hasXWon == 1 && hasOWon == 1) {
@@ -337,13 +339,46 @@ int is_valid_move(struct move m, board u){
   }
 
   //FREE
+  free(columnData);
 
   return 1;
 }
 
-// TODO
+// Need to test
 char is_winning_move(struct move m, board u){
-  return 'x';
+  /*
+  * 1. Copy board
+  * 2. Apply move
+  * 3. Check winner
+  * 4. Cleanup duplicated board
+  */
+
+  // 1. Copy board
+  board copy = setup_board();
+  char** boardData = calloc(u->columns * u->rows, sizeof(char));
+
+  for(int row = 0; row < u->rows; row++) {
+    char* rowData = malloc(sizeof(char) * u->columns);
+    for(int col = 0; col < u->columns; col++) {
+      rowData[col] = u->positions[row][col];
+    }
+    boardData[row] = rowData;
+  }
+
+  copy->positions = boardData;
+  copy->toMove = u->toMove;
+  copy->rows = u->rows;
+  copy->columns = u->columns;
+
+  // 2. Apply move
+  play_move(m, copy);
+
+  // 3. Check winner
+  char winner = current_winner(copy);
+
+  // 4. Cleanup duplicated board
+  cleanup_board(copy);
+  return winner;
 }
 
 void play_move(struct move m, board u){
@@ -446,6 +481,7 @@ void apply_gravity(board u) {
     shift_to_end(colData, u->rows);
     set_column(u, col, colData);
     free(colData);
+    colData = NULL;
   }
 }
 
@@ -481,6 +517,7 @@ void print_col(board u, int column) {
   char* colData = get_column(u, column);
   print_array(colData, u->rows);
   free(colData);
+  colData = NULL;
 }
 
 void print_diagonal(board u, int row, int column, int direction) {

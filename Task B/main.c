@@ -11,7 +11,14 @@ int main(){
 
   while(current_winner(my_board)=='.') {
     struct move next_move = read_in_move(my_board);
+
     if (is_valid_move(next_move,my_board)) {
+      char winner = is_winning_move(next_move, my_board);
+      if(winner != '.') {
+        printf("This move would win for %c\n", winner);
+        //continue;
+      }
+      //printf("it's valid c: %d r: %d\n", next_move.column, next_move.row);
     play_move(next_move,my_board);
     write_out_file(stdout,my_board);
     }
