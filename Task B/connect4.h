@@ -20,20 +20,3 @@ void play_move(struct move m, board u);
 
 char current_winner(board u);
 char next_player(board u);
-
-// Delete these
-
-char* get_column(board u, int column);
-void set_column(board u, int column, char* newColData);
-char* get_row(board u, int row);
-void set_row(board u, int row, char* newRowData);
-void shift_to_end(char* array, int length);
-void rotate_array(char* array, int length, int shift);
-void apply_gravity(board u);
-void rotate_row(board u, int row, int direction);
-struct move standardise_move(struct move move, board u);
-
-void print_double_array(char** array, int globalLen, int innerLen);
-void print_array(char* array, int length);
-void print_col(board u, int column);
-void print_diagonal(board u, int row, int column, int direction);

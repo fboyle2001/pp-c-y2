@@ -5,8 +5,13 @@
 #include <stdlib.h>
 #include"connect4.h"
 
-void print_double_array(char** array, int globalLen, int innerLen);
-void print_array(char* array, int length);
+// Defined at bottom of the file
+char* get_column(board u, int column);
+void set_column(board u, int column, char* newColData);
+void shift_to_end(char* array, int length);
+void rotate_array(char* array, int length, int shift);
+void apply_gravity(board u);
+void rotate_row(board u, int row, int direction);
 struct diagonal get_diagonal(board u, int row, int column, int direction);
 
 struct board_structure {
@@ -16,6 +21,7 @@ struct board_structure {
   int columns;
 };
 
+// Used to return the length and data of a diagonal
 struct diagonal {
   char* data;
   int length;
@@ -23,6 +29,7 @@ struct diagonal {
 
 board setup_board() {
   // we typedef to a pointer so malloc it
+  // TODO is this right??
   board board = malloc(sizeof(*board));
 
   board->positions = NULL;
@@ -44,7 +51,6 @@ void cleanup_board(board u){
 
 // MAKE SURE TO dos2unix THE TEXT FILE!!! WILL RUIN ARRAY LENGTH
 void read_in_file(FILE *infile, board u){
-  //You may put code here
   // Board data
   char **boardData = NULL;
   int numberOfRows = 0;
@@ -57,7 +63,7 @@ void read_in_file(FILE *infile, board u){
 
   while(fscanf(infile, "%c", &readInChar) != EOF) {
     if(readInChar == '\r') {
-      printf("RUN DOS2UNIX!\n");
+      fprintf(stderr, "File has Windows endings\n");
       exit(1);
     }
 
@@ -66,8 +72,7 @@ void read_in_file(FILE *infile, board u){
         charactersPerRow = rowLength;
       } else {
         if(charactersPerRow != rowLength) {
-          printf("%d %d %d", numberOfRows, charactersPerRow, rowLength);
-          printf("Non-matched lengths");
+          fprintf(stderr, "Rows are not of equal length\n");
           exit(1);
         }
       }
@@ -75,8 +80,8 @@ void read_in_file(FILE *infile, board u){
       numberOfRows++;
       char** tempBoardPointer = realloc(boardData, sizeof(char) * charactersPerRow * numberOfRows);
 
-      if(!tempBoardPointer) {
-        printf("Bad 2\n");
+      if(tempBoardPointer == NULL) {
+        fprintf(stderr, "Unable to allocate space for the board\n");
         exit(1);
       }
 
@@ -92,8 +97,8 @@ void read_in_file(FILE *infile, board u){
     rowLength++;
     char* tempPointer = realloc(rowArray, sizeof(char) * rowLength);
 
-    if(!tempPointer) {
-      printf("Bad\n");
+    if(tempPointer == NULL) {
+      fprintf(stderr, "Unable to allocate space for the row\n");
       exit(1);
     }
 
@@ -219,7 +224,7 @@ char current_winner(board u){
       }
     }
 
-    // free(rowData);
+    // Don't free as it is still being used by the board
     rowData = NULL;
   }
 
@@ -338,9 +343,7 @@ int is_valid_move(struct move m, board u){
     return 0;
   }
 
-  //FREE
   free(columnData);
-
   return 1;
 }
 
@@ -357,11 +360,24 @@ char is_winning_move(struct move m, board u){
   board copy = setup_board();
   char** boardData = calloc(u->columns * u->rows, sizeof(char));
 
+  if(boardData == NULL) {
+    fprintf(stderr, "Unable to allocate space to store the duplicated board\n");
+    exit(1);
+  }
+
   for(int row = 0; row < u->rows; row++) {
     char* rowData = malloc(sizeof(char) * u->columns);
+
+    if(rowData == NULL) {
+      fprintf(stderr, "Unable to allocate space to store the duplicated row\n");
+      exit(1);
+    }
+
+    // Copy over so we don't affect the original board
     for(int col = 0; col < u->columns; col++) {
       rowData[col] = u->positions[row][col];
     }
+
     boardData[row] = rowData;
   }
 
@@ -411,14 +427,22 @@ void play_move(struct move m, board u){
     apply_gravity(u);
   }
 
+  // Swap who's turn it is to move
   u->toMove = (u -> toMove + 1) % 2;
 }
 
 //You may put additional functions here if you wish.
 
+// Select a column from the board
+// Make sure to free once done with the column
 char* get_column(board u, int column) {
   // no. of rows here since depth of a column = rows
   char* colData = malloc(sizeof(char) * u->rows);
+
+  if(colData == NULL) {
+    fprintf(stderr, "Unable to allocate space to store the column\n");
+    exit(1);
+  }
 
   for(int row = 0; row < u->rows; row++) {
     colData[row] = u->positions[row][column];
@@ -427,6 +451,7 @@ char* get_column(board u, int column) {
   return colData;
 }
 
+// Sets the values of a column in the board
 void set_column(board u, int column, char* newColData) {
   for(int row = 0; row < u->rows; row++) {
     u->positions[row][column] = newColData[row];
@@ -434,7 +459,7 @@ void set_column(board u, int column, char* newColData) {
 }
 
 // Takes an array, shifts to the end and removes gaps between elements while maintaining length
-// Works inline without taking any more memory than a few vars to track
+// Affects the array passed to it so returns void
 void shift_to_end(char* array, int length) {
   int filledSpaces = 0;
   int moved = 1;
@@ -460,7 +485,7 @@ void shift_to_end(char* array, int length) {
 }
 
 // Shifts everything one index and wraps
-// Inline so void return
+// Affects the array passed to it so returns void
 void rotate_array(char* array, int length, int shift) {
   char copy = array[0];
   char temp;
@@ -489,6 +514,8 @@ void rotate_row(board u, int row, int direction) {
   rotate_array(u->positions[row], u->columns, direction < 0 ? -1 : (direction > 0 ? 1 : 0));
 }
 
+// Gets a diagonal from the board
+// Row should always be u->rows - 1
 struct diagonal get_diagonal(board u, int row, int column, int direction) {
   char* diagonal = NULL;
   int diagonalLength = 0;
@@ -496,6 +523,12 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
   while(row != -1) {
     diagonalLength++;
     diagonal = realloc(diagonal, sizeof(char) * diagonalLength);
+
+    if(diagonal == NULL) {
+      fprintf(stderr, "Unable to allocate space for the diagonal\n");
+      exit(1);
+    }
+
     diagonal[diagonalLength - 1] = u->positions[row][column];
     row -= 1;
     column += direction;
@@ -509,36 +542,4 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
 
   struct diagonal returnDiagonal = { .data = diagonal, .length = diagonalLength };
   return returnDiagonal;
-}
-
-// Delete these at the end
-
-void print_col(board u, int column) {
-  char* colData = get_column(u, column);
-  print_array(colData, u->rows);
-  free(colData);
-  colData = NULL;
-}
-
-void print_diagonal(board u, int row, int column, int direction) {
-  struct diagonal diagonal = get_diagonal(u, row, column, direction);
-  print_array(diagonal.data, diagonal.length);
-  free(diagonal.data);
-}
-
-void print_array(char* array, int length) {
-  for(int i = 0; i < length; i++) {
-    printf("%c", array[i]);
-  }
-
-  printf("\n");
-}
-
-void print_double_array(char** array, int globalLen, int innerLen) {
-  for(int i = 0; i < globalLen; i++) {
-    for(int j = 0; j < innerLen; j++) {
-      printf("%c", array[i][j]);
-    }
-    printf("\n");
-  }
 }
