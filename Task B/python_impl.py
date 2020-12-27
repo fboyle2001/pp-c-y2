@@ -33,6 +33,7 @@ def set_col(board, col, col_data):
 def shift_to_end(array):
     filledSpaces = 0
     moved = True
+    count = 0
 
     while moved:
         moved = False
@@ -40,14 +41,20 @@ def shift_to_end(array):
         for i in range(len(array) - 1 - filledSpaces, -1 , -1):
             if array[i] != 0:
                 shift_index = len(array) - 1 - filledSpaces
+
+                if shift_index == i:
+                    print("EQUAL")
+
                 array[shift_index] = array[i]
 
                 if shift_index != i:
                     array[i] = 0
 
                 moved = True
+                count += 1
                 filledSpaces += 1
 
+    print(count)
     return array
 
 def apply_gravity(board):
@@ -121,11 +128,14 @@ def get_left_diagonal(board, row, column):
 
 print_board(board)
 
-for i in range(columns):
-    print((5, i), "left", get_left_diagonal(board, 5, i))
+a = [1, 0, 0, 1, 0]
+shift_to_end(a)
 
-for i in range(columns):
-    print((5, i), "right", get_right_diagonal(board, 5, i))
+# for i in range(columns):
+#     print((5, i), "left", get_left_diagonal(board, 5, i))
+#
+# for i in range(columns):
+#     print((5, i), "right", get_right_diagonal(board, 5, i))
 
 #pprint(get_left_diagonal(board, 5, 1))
 # # columns are left to right, rows are top to bottm

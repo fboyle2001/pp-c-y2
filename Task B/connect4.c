@@ -8,9 +8,9 @@
 // Defined at bottom of the file
 char* get_column(board u, int column);
 void set_column(board u, int column, char* newColData);
-void shift_to_end(char* array, int length);
+int shift_to_end(char* array, int length);
 void rotate_array(char* array, int length, int shift);
-void apply_gravity(board u);
+int apply_gravity(board u);
 void rotate_row(board u, int row, int direction);
 struct diagonal get_diagonal(board u, int row, int column, int direction);
 
@@ -49,7 +49,14 @@ void cleanup_board(board u){
   free(u);
 }
 
-// MAKE SURE TO dos2unix THE TEXT FILE!!! WILL RUIN ARRAY LENGTH
+/*
+* Valid files will:
+* - Have at most 512 columns
+* - Contain only '.', 'x', 'o'
+* - Gravity will already have been applied
+*
+* Need to also determine which player's turn it is
+*/
 void read_in_file(FILE *infile, board u){
   // Board data
   char **boardData = NULL;
@@ -61,12 +68,9 @@ void read_in_file(FILE *infile, board u){
   char *rowArray = NULL;
   int rowLength = 0;
 
-  while(fscanf(infile, "%c", &readInChar) != EOF) {
-    if(readInChar == '\r') {
-      fprintf(stderr, "File has Windows endings\n");
-      exit(1);
-    }
+  int moveCount = 0;
 
+  while(fscanf(infile, "%c", &readInChar) != EOF) {
     if(readInChar == '\n') {
       if(charactersPerRow == -1) {
         charactersPerRow = rowLength;
@@ -94,7 +98,18 @@ void read_in_file(FILE *infile, board u){
       continue;
     }
 
+    if(readInChar != 'x' && readInChar != 'o' && readInChar != '.') {
+      fprintf(stderr, "Input file is not valid (contains %c)\n", readInChar);
+      exit(1);
+    }
+
     rowLength++;
+
+    if(rowLength > 512) {
+      fprintf(stderr, "Input files must have at most 512 columns\n");
+      exit(1);
+    }
+
     char* tempPointer = realloc(rowArray, sizeof(char) * rowLength);
 
     if(tempPointer == NULL) {
@@ -102,15 +117,29 @@ void read_in_file(FILE *infile, board u){
       exit(1);
     }
 
+    // If it is an x or o then count the move
+    if(readInChar != '.') {
+      moveCount++;
+    }
+
     rowArray = tempPointer;
     rowArray[rowLength - 1] = readInChar;
   }
 
+
   u->positions = boardData;
-  u->toMove = 0;
+  u->toMove = moveCount % 2;
   u->rows = numberOfRows;
   u->columns = charactersPerRow;
-  apply_gravity(u);
+
+  // Now check gravity has already been applied
+
+  int shiftedTotal = apply_gravity(u);
+
+  if(shiftedTotal != 0) {
+    fprintf(stderr, "Input files must already have had gravity applied\n");
+    exit(1);
+  }
 }
 
 void write_out_file(FILE *outfile, board u){
@@ -459,11 +488,12 @@ void set_column(board u, int column, char* newColData) {
 }
 
 // Takes an array, shifts to the end and removes gaps between elements while maintaining length
-// Affects the array passed to it so returns void
-void shift_to_end(char* array, int length) {
+// Returns the number of shifted elements
+int shift_to_end(char* array, int length) {
   int filledSpaces = 0;
   int moved = 1;
   int i, shiftIndex;
+  int shiftedTotal = 0;
 
   while(moved == 1) {
     moved = 0;
@@ -475,6 +505,8 @@ void shift_to_end(char* array, int length) {
 
         if(shiftIndex != i) {
           array[i] = '.';
+          // Only want to count those that actually led to a change
+          shiftedTotal++;
         }
 
         moved = 1;
@@ -482,6 +514,8 @@ void shift_to_end(char* array, int length) {
       }
     }
   }
+
+  return shiftedTotal;
 }
 
 // Shifts everything one index and wraps
@@ -498,16 +532,19 @@ void rotate_array(char* array, int length, int shift) {
 }
 
 // Applies gravity to the board
-void apply_gravity(board u) {
+int apply_gravity(board u) {
   char* colData = NULL;
+  int shiftedTotal = 0;
 
   for(int col = 0; col < u->columns; col++) {
     colData = get_column(u, col);
-    shift_to_end(colData, u->rows);
+    shiftedTotal += shift_to_end(colData, u->rows);
     set_column(u, col, colData);
     free(colData);
     colData = NULL;
   }
+
+  return shiftedTotal;
 }
 
 void rotate_row(board u, int row, int direction) {
