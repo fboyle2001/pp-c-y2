@@ -83,7 +83,7 @@ void read_in_file(FILE *infile, board u){
       }
 
       numberOfRows++;
-      char** tempBoardPointer = realloc(boardData, sizeof(char) * charactersPerRow * numberOfRows);
+      char** tempBoardPointer = realloc(boardData, sizeof(char*) * numberOfRows);
 
       if(tempBoardPointer == NULL) {
         fprintf(stderr, "Unable to allocate space for the board\n");
@@ -197,7 +197,9 @@ void write_out_file(FILE *outfile, board u){
   }
 
   free(xWinningLine);
+  xWinningLine = NULL;
   free(oWinningLine);
+  oWinningLine = NULL;
 }
 
 char next_player(board u){
@@ -596,6 +598,7 @@ int apply_gravity(board u) {
   return shiftedTotal;
 }
 
+// Rotates a row in place on the board
 void rotate_row(board u, int row, int direction) {
   rotate_array(u->positions[row], u->columns, direction < 0 ? -1 : (direction > 0 ? 1 : 0));
 }
@@ -636,6 +639,11 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
 struct move *find_winning_line(board u, char player) {
   struct move *winningLine = malloc(sizeof(struct move) * 4);
 
+  if(winningLine == NULL) {
+    fprintf(stderr, "Unable to allocate space to store the winning line for %c\n", player);
+    exit(1);
+  }
+
   char* colData = NULL;
   char lastSeen = '.';
   int run = 0;
@@ -659,6 +667,7 @@ struct move *find_winning_line(board u, char player) {
             winningLine[1] = (struct move) { .column = col, .row = i - 2 };
             winningLine[2] = (struct move) { .column = col, .row = i - 1 };
             winningLine[3] = (struct move) { .column = col, .row = i     };
+            free(colData);
             return winningLine;
           }
         }
@@ -771,6 +780,8 @@ struct move *find_winning_line(board u, char player) {
             winningLine[1] = (struct move) { .column = secondCol, .row = u->rows - start - 2 };
             winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
             winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
+            free(left_diagonal.data);
+            free(right_diagonal.data);
             return winningLine;
           }
         }
@@ -810,6 +821,8 @@ struct move *find_winning_line(board u, char player) {
             winningLine[1] = (struct move) { .column = secondCol, .row = u->rows - start - 2 };
             winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
             winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
+            free(left_diagonal.data);
+            free(right_diagonal.data);
             return winningLine;
           }
         }
