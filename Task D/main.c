@@ -14,6 +14,8 @@ void display_help();
 char** read_file_lines(char* fileName, int* lines);
 
 int main(int argc, char** argv) {
+  char** inputLines = NULL;
+  int totalInputLines = 0;
 
   if(argc <= 1) {
     // No args
@@ -43,10 +45,22 @@ int main(int argc, char** argv) {
     int lines = 0;
     char** fileLines = read_file_lines(arg, &lines);
 
-    for(int i = 0; i < lines; i++) {
-      printf("%s\n", fileLines[i]);
+    inputLines = realloc(inputLines, (totalInputLines + lines) * sizeof(char*));
+
+    for(int j = 0; j < lines; j++) {
+      inputLines[totalInputLines + j] = fileLines[j];
+      //free(fileLines[j]);
     }
+
+    free(fileLines);
+    totalInputLines += lines;
   }
+
+  for(int i = 0; i < totalInputLines; i++) {
+    free(inputLines[i]);
+  }
+
+  free(inputLines);
 
   return 0;
 }
