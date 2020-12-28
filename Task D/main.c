@@ -13,6 +13,7 @@
 void display_help();
 char** read_file_lines(char* fileName, int* lines);
 void write_file_lines(char* fileName, char** outputLines, int lines);
+char** read_stdin(int* lines);
 
 int compareStrings(const void *a, const void *b);
 int compareStringsReverse(const void *a, const void *b);
@@ -29,84 +30,89 @@ int main(int argc, char** argv) {
   char* outputFile = NULL;
   bool expectingOutputFile = false;
 
-  if(argc <= 1) {
-    // No args
-    printf("No arguments specified\n");
-    display_help();
-    return 1;
-  }
+  if(argc > 1) {
+    for(int i = 1; i < argc; i++) {
+      char* arg = argv[i];
+      int argLength = strlen(arg);
 
-  for(int i = 1; i < argc; i++) {
-    char* arg = argv[i];
-    int argLength = strlen(arg);
-
-    if(argLength == 0) {
-      printf("Invalid argument\n");
-      display_help();
-      return 1;
-    }
-
-    // Add in something here to intercept the output file
-    if(expectingOutputFile) {
-      outputFile = arg;
-      expectingOutputFile = false;
-      continue;
-    }
-
-    if(arg[0] == '-') {
-      if(argLength != 2) {
-        // Invalid option it's just a '-' or too many characters
-        printf("Invalid option %s\n", arg);
+      if(argLength == 0) {
+        printf("Invalid argument\n");
         display_help();
         return 1;
       }
 
-      // parse the options
-      switch(arg[1]) {
-        case 'o':
-          if(outputFile != NULL) {
-            printf("Already set output file\n");
-            return 1;
-          }
-
-          expectingOutputFile = true;
-          break;
-        case 'n':
-          numeric = true;
-          break;
-        case 'r':
-          reverse = true;
-          break;
-        case 'h':
-          display_help();
-          return 0;
-        default:
-          printf("Invalid option -%c\n", arg[1]);
-          display_help();
-          return 1;
+      // Add in something here to intercept the output file
+      if(expectingOutputFile) {
+        outputFile = arg;
+        expectingOutputFile = false;
+        continue;
       }
 
-      continue;
+      if(arg[0] == '-') {
+        if(argLength != 2) {
+          // Invalid option it's just a '-' or too many characters
+          printf("Invalid option %s\n", arg);
+          display_help();
+          return 1;
+        }
+
+        // parse the options
+        switch(arg[1]) {
+          case 'o':
+            if(outputFile != NULL) {
+              printf("Already set output file\n");
+              return 1;
+            }
+
+            expectingOutputFile = true;
+            break;
+          case 'n':
+            numeric = true;
+            break;
+          case 'r':
+            reverse = true;
+            break;
+          case 'h':
+            display_help();
+            return 0;
+          default:
+            printf("Invalid option -%c\n", arg[1]);
+            display_help();
+            return 1;
+        }
+
+        continue;
+      }
+
+      // Read the input file
+      int lines = 0;
+      char** fileLines = read_file_lines(arg, &lines);
+
+      inputLines = realloc(inputLines, (totalInputLines + lines) * sizeof(char*));
+
+      if(inputLines == NULL) {
+        fprintf(stderr, "Unable to allocate space for the input lines\n");
+        return 1;
+      }
+
+      for(int j = 0; j < lines; j++) {
+        inputLines[totalInputLines + j] = fileLines[j];
+      }
+
+      free(fileLines);
+      totalInputLines += lines;
     }
-
-    // Read the input file
-    int lines = 0;
-    char** fileLines = read_file_lines(arg, &lines);
-
-    inputLines = realloc(inputLines, (totalInputLines + lines) * sizeof(char*));
-
-    for(int j = 0; j < lines; j++) {
-      inputLines[totalInputLines + j] = fileLines[j];
-    }
-
-    free(fileLines);
-    totalInputLines += lines;
   }
 
   if(expectingOutputFile) {
     // put -o but no file
-    printf("-o flag was set but no output file was specified\n");
+    printf("-o requires an argument but no output file was specified\n");
     return 1;
+  }
+
+  // Read from stdin instead
+  if(inputLines == NULL) {
+    inputLines = read_stdin(&totalInputLines);
   }
 
   if(reverse) {
@@ -220,11 +226,83 @@ int compareStringsNumericReverse(const void *a, const void *b) {
 }
 
 void display_help() {
-  printf("==Help==\n");
+  printf("I have implemented all options specified in Task D of the coursework\n");
+  printf("Usage: ./sort [OPTION]... [FILE]...\n");
+  printf("With no FILE it reads standard input until EOF [CTRL-D]\n");
+  printf("\n");
+  printf("Ordering options:\n");
+  printf("\n");
+  printf(" -n      compare according to string numerical value\n");
+  printf(" -r      reverse the result of comparisons\n");
+  printf("\n");
+  printf("Other options:\n");
+  printf("\n");
+  printf(" -o FILE write result to FILE instead of standard output\n");
+  printf(" -h      displays this help dialogue based off of sort --help\n");
 }
 
 char** read_file_lines(char* fileName, int* lines) {
   FILE* fp = fopen(fileName, "r");
+
+  if(fp == NULL) {
+    fprintf(stderr, "%s input file does not exist\n", fileName);
+    exit(1);
+  }
+
+  char** fileLines = NULL;
+  // Whole file reading
+  int totalLines = 0;
+
+  // Single line reading
+  char* currentLine = NULL;
+  int currentLineLength = 0;
+
+  char readInChar;
+
+  while(fscanf(fp, "%c", &readInChar) != EOF) {
+    if(readInChar == '\n') {
+      currentLineLength++;
+      currentLine = realloc(currentLine, currentLineLength * sizeof(char));
+
+      if(currentLine == NULL) {
+        fprintf(stderr, "Unable to allocate space for the current line buffer\n");
+        exit(1);
+      }
+
+      currentLine[currentLineLength - 1] = '\0';
+
+      totalLines++;
+
+      fileLines = realloc(fileLines, totalLines * sizeof(char*));
+
+      if(fileLines == NULL) {
+        fprintf(stderr, "Unable to allocate space to store the next line of text\n");
+      }
+
+      fileLines[totalLines - 1] = currentLine;
+
+      currentLine = NULL;
+      currentLineLength = 0;
+      continue;
+    }
+
+    currentLineLength++;
+    currentLine = realloc(currentLine, currentLineLength * sizeof(char));
+
+    if(currentLine == NULL) {
+      fprintf(stderr, "Unable to allocate space for the current line buffer\n");
+      exit(1);
+    }
+
+    currentLine[currentLineLength - 1] = readInChar;
+  }
+
+  *lines = totalLines;
+  fclose(fp);
+  return fileLines;
+}
+
+char** read_stdin(int* lines) {
   char** fileLines = NULL;
   // Whole file reading
   int totalLines = 0;
@@ -236,16 +314,27 @@ char** read_file_lines(char* fileName, int* lines) {
   char readInChar;
   int c = 0;
 
-  while(fscanf(fp, "%c", &readInChar) != EOF) {
+  while(fscanf(stdin, "%c", &readInChar) != EOF) {
     if(readInChar == '\n') {
       c++;
       currentLineLength++;
       currentLine = realloc(currentLine, currentLineLength * sizeof(char));
+
+      if(currentLine == NULL) {
+        fprintf(stderr, "Unable to allocate space for the current line buffer\n");
+        exit(1);
+      }
+
       currentLine[currentLineLength - 1] = '\0';
 
       totalLines++;
 
       fileLines = realloc(fileLines, totalLines * sizeof(char*));
+
+      if(fileLines == NULL) {
+        fprintf(stderr, "Unable to allocate space to store the next line of text\n");
+      }
+
       fileLines[totalLines - 1] = currentLine;
 
       currentLine = NULL;
@@ -255,11 +344,16 @@ char** read_file_lines(char* fileName, int* lines) {
 
     currentLineLength++;
     currentLine = realloc(currentLine, currentLineLength * sizeof(char));
+
+    if(currentLine == NULL) {
+      fprintf(stderr, "Unable to allocate space for the current line buffer\n");
+      exit(1);
+    }
+
     currentLine[currentLineLength - 1] = readInChar;
   }
 
   *lines = totalLines;
-  fclose(fp);
   return fileLines;
 }
 
