@@ -12,10 +12,19 @@
 
 void display_help();
 char** read_file_lines(char* fileName, int* lines);
+int compareStrings(const void *a, const void *b);
+int compareStringsReverse(const void *a, const void *b);
+void write_file_lines(char* fileName, char** outputLines, int lines);
 
 int main(int argc, char** argv) {
   char** inputLines = NULL;
   int totalInputLines = 0;
+
+  bool reverse = false;
+  bool numeric = false;
+
+  char* outputFile = NULL;
+  bool expectingOutputFile = false;
 
   if(argc <= 1) {
     // No args
@@ -34,12 +43,48 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    if(arg[0] == '-') {
-      // parse the options
+    // Add in something here to intercept the output file
+    if(expectingOutputFile) {
+      outputFile = arg;
+      expectingOutputFile = false;
       continue;
     }
 
-    // Add in something here to intercept the output file
+    if(arg[0] == '-') {
+      if(argLength != 2) {
+        // Invalid option it's just a '-' or too many characters
+        printf("Invalid option %s\n", arg);
+        display_help();
+        return 1;
+      }
+
+      // parse the options
+      switch(arg[1]) {
+        case 'o':
+          if(outputFile != NULL) {
+            printf("Already set output file\n");
+            return 1;
+          }
+
+          expectingOutputFile = true;
+          break;
+        case 'n':
+          numeric = true;
+          break;
+        case 'r':
+          reverse = true;
+          break;
+        case 'h':
+          display_help();
+          return 0;
+        default:
+          printf("Invalid option -%c\n", arg[1]);
+          display_help();
+          return 1;
+      }
+
+      continue;
+    }
 
     // Read the input file
     int lines = 0;
@@ -49,11 +94,32 @@ int main(int argc, char** argv) {
 
     for(int j = 0; j < lines; j++) {
       inputLines[totalInputLines + j] = fileLines[j];
-      //free(fileLines[j]);
     }
 
     free(fileLines);
     totalInputLines += lines;
+  }
+
+  if(expectingOutputFile) {
+    // put -o but no file
+    printf("-o flag was set but no output file was specified\n");
+    return 1;
+  }
+
+  if(reverse) {
+    qsort(inputLines, totalInputLines, sizeof(char *), compareStringsReverse);
+  } else {
+    qsort(inputLines, totalInputLines, sizeof(char *), compareStrings);
+  }
+
+  // Free the input array
+
+  if(outputFile != NULL) {
+    write_file_lines(outputFile, inputLines, totalInputLines);
+  } else {
+    for(int i = 0; i < totalInputLines; i++) {
+      printf("%s\n", *(&inputLines[i]));
+    }
   }
 
   for(int i = 0; i < totalInputLines; i++) {
@@ -61,8 +127,15 @@ int main(int argc, char** argv) {
   }
 
   free(inputLines);
-
   return 0;
+}
+
+int compareStrings(const void *a, const void *b) {
+  return strcmp(*(char **)a, *(char **)b);
+}
+
+int compareStringsReverse(const void *a, const void *b) {
+  return -strcmp(*(char **)a, *(char **)b);
 }
 
 void display_help() {
@@ -107,4 +180,19 @@ char** read_file_lines(char* fileName, int* lines) {
   *lines = totalLines;
   fclose(fp);
   return fileLines;
+}
+
+void write_file_lines(char* fileName, char** outputLines, int lines) {
+  FILE* fp = fopen(fileName, "w");
+
+  if(fp == NULL) {
+    fprintf(stderr, "Unable to open the file %s in write mode", fileName);
+    exit(1);
+  }
+
+  for(int line = 0; line < lines; line++) {
+    fprintf(fp, "%s\n", outputLines[line]);
+  }
+
+  fclose(fp);
 }
