@@ -12,9 +12,12 @@
 
 void display_help();
 char** read_file_lines(char* fileName, int* lines);
+void write_file_lines(char* fileName, char** outputLines, int lines);
+
 int compareStrings(const void *a, const void *b);
 int compareStringsReverse(const void *a, const void *b);
-void write_file_lines(char* fileName, char** outputLines, int lines);
+int compareStringsNumeric(const void *a, const void *b);
+int compareStringsNumericReverse(const void *a, const void *b);
 
 int main(int argc, char** argv) {
   char** inputLines = NULL;
@@ -107,9 +110,17 @@ int main(int argc, char** argv) {
   }
 
   if(reverse) {
-    qsort(inputLines, totalInputLines, sizeof(char *), compareStringsReverse);
+    if(numeric) {
+      qsort(inputLines, totalInputLines, sizeof(char *), compareStringsNumericReverse);
+    } else {
+      qsort(inputLines, totalInputLines, sizeof(char *), compareStringsReverse);
+    }
   } else {
-    qsort(inputLines, totalInputLines, sizeof(char *), compareStrings);
+    if(numeric) {
+      qsort(inputLines, totalInputLines, sizeof(char *), compareStringsNumeric);
+    } else {
+      qsort(inputLines, totalInputLines, sizeof(char *), compareStrings);
+    }
   }
 
   // Free the input array
@@ -118,7 +129,7 @@ int main(int argc, char** argv) {
     write_file_lines(outputFile, inputLines, totalInputLines);
   } else {
     for(int i = 0; i < totalInputLines; i++) {
-      printf("%s\n", *(&inputLines[i]));
+      printf("%s\n", inputLines[i]);
     }
   }
 
@@ -135,6 +146,76 @@ int compareStrings(const void *a, const void *b) {
 }
 
 int compareStringsReverse(const void *a, const void *b) {
+  return -strcmp(*(char **)a, *(char **)b);
+}
+
+int compareStringsNumeric(const void *a, const void *b) {
+  /*
+  * 1. Extract the number from the front
+  * 2. Compare them
+  * 3. If they are equal return strcmp(a, b) instead
+  */
+  int scannedNumberFromA;
+  int matchedA = sscanf(*(char **)a, "%d", &scannedNumberFromA);
+
+  int scannedNumberFromB;
+  int matchedB = sscanf(*(char **)b, "%d", &scannedNumberFromB);
+
+  if(matchedA == 0 && matchedB != 0) {
+    return -1;
+  }
+
+  if(matchedA != 0 && matchedB == 0) {
+    return 1;
+  }
+
+  // both have int starts
+
+  if(scannedNumberFromA > scannedNumberFromB) {
+    return 1;
+  }
+
+  if(scannedNumberFromA < scannedNumberFromB) {
+    return -1;
+  }
+
+  // otherwise compare normally
+
+  return strcmp(*(char **)a, *(char **)b);
+}
+
+int compareStringsNumericReverse(const void *a, const void *b) {
+  /*
+  * 1. Extract the number from the front
+  * 2. Compare them
+  * 3. If they are equal return strcmp(a, b) instead
+  */
+  int scannedNumberFromA;
+  int matchedA = sscanf(*(char **)a, "%d", &scannedNumberFromA);
+
+  int scannedNumberFromB;
+  int matchedB = sscanf(*(char **)b, "%d", &scannedNumberFromB);
+
+  if(matchedA == 0 && matchedB != 0) {
+    return 1;
+  }
+
+  if(matchedA != 0 && matchedB == 0) {
+    return -1;
+  }
+
+  // both have int starts
+
+  if(scannedNumberFromA > scannedNumberFromB) {
+    return -1;
+  }
+
+  if(scannedNumberFromA < scannedNumberFromB) {
+    return 1;
+  }
+
+  // otherwise compare normally
+
   return -strcmp(*(char **)a, *(char **)b);
 }
 
