@@ -3,7 +3,7 @@ int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("./boards/invalid_o_moves.txt","r");
+  infile=fopen("./boards/small_board.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 

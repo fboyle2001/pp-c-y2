@@ -44,10 +44,13 @@ board setup_board() {
 void cleanup_board(board u){
   for(int i = 0; i < u->rows; i++) {
     free(u->positions[i]);
+    u->positions[i] = NULL;
   }
 
   free(u->positions);
+  u->positions = NULL;
   free(u);
+  u = NULL;
 }
 
 /*
@@ -241,12 +244,18 @@ char current_winner(board u){
   char lastSeen = '.';
   int run = 0;
 
+  int full = 1;
+
   // Check columns
   for(int col = 0; col < u->columns; col++) {
     colData = get_column(u, col);
 
     for(int i = 0; i < u->rows; i++) {
       char pos = colData[i];
+
+      if(pos == '.') {
+        full = 0;
+      }
 
       // If we are on a run of the same type and it's not blanks
       if(pos == lastSeen && lastSeen != '.') {
@@ -270,6 +279,11 @@ char current_winner(board u){
 
     free(colData);
     colData = NULL;
+  }
+
+  // Full board is a draw
+  if(full == 1) {
+    return 'd';
   }
 
   char* rowData;
@@ -323,7 +337,6 @@ char current_winner(board u){
     }
 
     // Don't free as it is still being used by the board
-    rowData = NULL;
   }
 
   // Finally check diagonals, going to be a bit difficult but no need for wrapping
@@ -331,7 +344,6 @@ char current_winner(board u){
 
   for(int i = 0; i < u->columns; i++) {
     struct diagonal left_diagonal = get_diagonal(u, u->rows - 1, i, -1);
-    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
 
     // If it's less than 4 then they can't win on the diagonal
     if(left_diagonal.length >= 4) {
@@ -345,6 +357,12 @@ char current_winner(board u){
         }
       }
     }
+
+    // Need to free
+    free(left_diagonal.data);
+    left_diagonal.data = NULL;
+
+    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
 
     // If it's less than 4 then they can't win on the diagonal
     if(right_diagonal.length >= 4) {
@@ -360,8 +378,8 @@ char current_winner(board u){
     }
 
     // Need to free
-    free(left_diagonal.data);
     free(right_diagonal.data);
+    right_diagonal.data = NULL;
   }
 
   if(hasXWon == 1 && hasOWon == 1) {
@@ -438,10 +456,13 @@ int is_valid_move(struct move m, board u){
 
   // If the top element isn't '.' then they can't drop in this column
   if(columnData[0] != '.') {
+    free(columnData);
+    columnData = NULL;
     return 0;
   }
 
   free(columnData);
+  columnData = NULL;
   return 1;
 }
 
@@ -513,6 +534,7 @@ void play_move(struct move m, board u){
   selectedColumn[0] = next_player(u);
   set_column(u, column, selectedColumn);
   free(selectedColumn);
+  selectedColumn = NULL;
 
   // Now apply gravity
   apply_gravity(u);
@@ -687,6 +709,7 @@ struct move *find_winning_line(board u, char player) {
             winningLine[2] = (struct move) { .column = col, .row = i - 1 };
             winningLine[3] = (struct move) { .column = col, .row = i     };
             free(colData);
+            colData = NULL;
             return winningLine;
           }
         }
@@ -756,7 +779,6 @@ struct move *find_winning_line(board u, char player) {
     }
 
     // Don't free as it is still being used by the board
-    rowData = NULL;
   }
 
   // Finally check diagonals, going to be a bit difficult but no need for wrapping
@@ -764,7 +786,6 @@ struct move *find_winning_line(board u, char player) {
 
   for(int i = 0; i < u->columns; i++) {
     struct diagonal left_diagonal = get_diagonal(u, u->rows - 1, i, -1);
-    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
 
     // If it's less than 4 then they can't win on the diagonal
     if(left_diagonal.length >= 4) {
@@ -800,12 +821,16 @@ struct move *find_winning_line(board u, char player) {
             winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
             winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
             free(left_diagonal.data);
-            free(right_diagonal.data);
+            left_diagonal.data = NULL;
             return winningLine;
           }
         }
       }
     }
+
+    free(left_diagonal.data);
+    left_diagonal.data = NULL;
+    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
 
     // If it's less than 4 then they can't win on the diagonal
     if(right_diagonal.length >= 4) {
@@ -840,8 +865,8 @@ struct move *find_winning_line(board u, char player) {
             winningLine[1] = (struct move) { .column = secondCol, .row = u->rows - start - 2 };
             winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
             winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
-            free(left_diagonal.data);
             free(right_diagonal.data);
+            right_diagonal.data = NULL;
             return winningLine;
           }
         }
@@ -849,8 +874,8 @@ struct move *find_winning_line(board u, char player) {
     }
 
     // Need to free
-    free(left_diagonal.data);
     free(right_diagonal.data);
+    right_diagonal.data = NULL;
   }
 
   free(winningLine);

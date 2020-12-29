@@ -167,22 +167,49 @@ int compareStringsNumeric(const void *a, const void *b) {
   int scannedNumberFromB;
   int matchedB = sscanf(*(char **)b, "%d", &scannedNumberFromB);
 
+  /*
+  * The way sort -n works is that if a string does not start with a number
+  * it is assumed to start with 0 instead
+  */
+
+  // A didn't start with a number but B did
   if(matchedA == 0 && matchedB != 0) {
-    return -1;
+    // B starts with < 0 so A is put ahead of it
+    if(scannedNumberFromB < 0) {
+      return 1;
+    }
+
+    // B > 0 so put it ahead
+    if(scannedNumberFromB > 0) {
+      return -1;
+    }
+
+    // Otherwise go to compare by strcmp like normal
   }
 
+  // A starts with a number but B doesn't
   if(matchedA != 0 && matchedB == 0) {
-    return 1;
+    // A starts with < 0 so B is put ahead of it
+    if(scannedNumberFromA < 0) {
+      return -1;
+    }
+
+    // A > 0 so put it ahead
+    if(scannedNumberFromA > 0) {
+      return 1;
+    }
   }
 
   // both have int starts
 
-  if(scannedNumberFromA > scannedNumberFromB) {
-    return 1;
-  }
+  if(matchedA != 0 && matchedB != 0) {
+    if(scannedNumberFromA > scannedNumberFromB) {
+      return 1;
+    }
 
-  if(scannedNumberFromA < scannedNumberFromB) {
-    return -1;
+    if(scannedNumberFromA < scannedNumberFromB) {
+      return -1;
+    }
   }
 
   // otherwise compare normally
@@ -202,22 +229,49 @@ int compareStringsNumericReverse(const void *a, const void *b) {
   int scannedNumberFromB;
   int matchedB = sscanf(*(char **)b, "%d", &scannedNumberFromB);
 
+  /*
+  * The way sort -n works is that if a string does not start with a number
+  * it is assumed to start with 0 instead
+  */
+
+  // A didn't start with a number but B did
   if(matchedA == 0 && matchedB != 0) {
-    return 1;
+    // B starts with < 0 so A is put ahead of it
+    if(scannedNumberFromB < 0) {
+      return -1;
+    }
+
+    // B > 0 so put it ahead
+    if(scannedNumberFromB > 0) {
+      return 1;
+    }
+
+    // Otherwise go to compare by strcmp like normal
   }
 
+  // A starts with a number but B doesn't
   if(matchedA != 0 && matchedB == 0) {
-    return -1;
+    // A starts with < 0 so B is put ahead of it
+    if(scannedNumberFromA < 0) {
+      return 1;
+    }
+
+    // A > 0 so put it ahead
+    if(scannedNumberFromA > 0) {
+      return -1;
+    }
   }
 
   // both have int starts
 
-  if(scannedNumberFromA > scannedNumberFromB) {
-    return -1;
-  }
+  if(matchedA != 0 && matchedB != 0) {
+    if(scannedNumberFromA > scannedNumberFromB) {
+      return -1;
+    }
 
-  if(scannedNumberFromA < scannedNumberFromB) {
-    return 1;
+    if(scannedNumberFromA < scannedNumberFromB) {
+      return 1;
+    }
   }
 
   // otherwise compare normally

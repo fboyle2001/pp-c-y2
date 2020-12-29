@@ -1,5 +1,5 @@
 all:
-	gcc -Wextra -Wall -pedantic -std=c11 main.c -g -o main
+	gcc -Wextra -Wall -pedantic -std=c11 sort.c -g -o sort
 
 clean:
-	rm -rf main
+	rm -rf sort
