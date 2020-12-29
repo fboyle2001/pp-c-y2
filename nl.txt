@@ -1,0 +1,72 @@
+int compareStringsNumericReverse(const void *a, const void *b) {
+  char* strA = *(char **)a;
+  char* strB = *(char **)b;
+
+  /*
+  * 1. Extract the number from the front
+  * 2. Compare them
+  * 3. If they are equal return strcmp(a, b) instead
+  */
+  int scannedNumberFromA;
+  int matchedA = sscanf(strA, "%d", &scannedNumberFromA);
+
+  int scannedNumberFromB;
+  int matchedB = sscanf(strB, "%d", &scannedNumberFromB);
+
+  /*
+  * The way sort -n works is that if a string does not start with a number
+  * it is assumed to start with 0 instead
+  */
+
+  // A didn't start with a number but B did
+  if(matchedA == 0 && matchedB != 0) {
+    // B starts with < 0 so A is put ahead of it
+    if(scannedNumberFromB < 0) {
+      return -1;
+    }
+
+    if(!isalnum(strA[0]) || !isalnum(strB[0])) {
+      return -strcmp(strA, strB);
+    }
+
+    // B > 0 so put it ahead
+    if(scannedNumberFromB > 0) {
+      return 1;
+    }
+
+    // Otherwise go to compare by strcmp like normal
+  }
+
+  // A starts with a number but B doesn't
+  if(matchedA != 0 && matchedB == 0) {
+    // A starts with < 0 so B is put ahead of it
+    if(scannedNumberFromA < 0) {
+      return 1;
+    }
+
+    if(!isalnum(strA[0]) || !isalnum(strB[0])) {
+      return -strcmp(strA, strB);
+    }
+
+    // A > 0 so put it ahead
+    if(scannedNumberFromA > 0) {
+      return -1;
+    }
+  }
+
+  // both have int starts
+
+  if(matchedA != 0 && matchedB != 0) {
+    if(scannedNumberFromA > scannedNumberFromB) {
+      return -1;
+    }
+
+    if(scannedNumberFromA < scannedNumberFromB) {
+      return 1;
+    }
+  }
+
+  // otherwise compare normally
+
+  return -strcmp(strA, strB);
+}
