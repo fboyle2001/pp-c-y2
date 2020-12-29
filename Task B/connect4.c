@@ -69,7 +69,8 @@ void read_in_file(FILE *infile, board u){
   char *rowArray = NULL;
   int rowLength = 0;
 
-  int moveCount = 0;
+  int oMoves = 0;
+  int xMoves = 0;
 
   while(fscanf(infile, "%c", &readInChar) != EOF) {
     if(readInChar == '\n') {
@@ -80,6 +81,11 @@ void read_in_file(FILE *infile, board u){
           fprintf(stderr, "Rows are not of equal length\n");
           exit(1);
         }
+      }
+
+      if(rowLength < 4) {
+        fprintf(stderr, "Input files must have at least 4 columns\n");
+        exit(1);
       }
 
       numberOfRows++;
@@ -119,17 +125,30 @@ void read_in_file(FILE *infile, board u){
     }
 
     // If it is an x or o then count the move
-    if(readInChar != '.') {
-      moveCount++;
+    if(readInChar == 'x') {
+      xMoves++;
+    } else if(readInChar == 'o') {
+      oMoves++;
     }
 
     rowArray = tempPointer;
     rowArray[rowLength - 1] = readInChar;
   }
 
+  int moveDif = xMoves - oMoves;
+
+  if(moveDif < 0) {
+    fprintf(stderr, "The input file is invalid: o has made more moves than x\n");
+    exit(1);
+  }
+
+  if(moveDif > 1) {
+    fprintf(stderr, "The input file is invalid: x has made at least 2 more moves than o\n");
+    exit(1);
+  }
 
   u->positions = boardData;
-  u->toMove = moveCount % 2;
+  u->toMove = moveDif; // If moveDif == 0 then it's x, if moveDif == 1 then it's o
   u->rows = numberOfRows;
   u->columns = charactersPerRow;
 
@@ -437,7 +456,7 @@ char is_winning_move(struct move m, board u){
 
   // 1. Copy board
   board copy = setup_board();
-  char** boardData = calloc(u->columns * u->rows, sizeof(char));
+  char** boardData = calloc(u->columns * u->rows, sizeof(char*));
 
   if(boardData == NULL) {
     fprintf(stderr, "Unable to allocate space to store the duplicated board\n");
@@ -445,7 +464,7 @@ char is_winning_move(struct move m, board u){
   }
 
   for(int row = 0; row < u->rows; row++) {
-    char* rowData = malloc(sizeof(char) * u->columns);
+    char* rowData = calloc(u->columns, sizeof(char));
 
     if(rowData == NULL) {
       fprintf(stderr, "Unable to allocate space to store the duplicated row\n");
@@ -516,7 +535,7 @@ void play_move(struct move m, board u){
 // Make sure to free once done with the column
 char* get_column(board u, int column) {
   // no. of rows here since depth of a column = rows
-  char* colData = malloc(sizeof(char) * u->rows);
+  char* colData = calloc(u->rows, sizeof(char));
 
   if(colData == NULL) {
     fprintf(stderr, "Unable to allocate space to store the column\n");
@@ -637,7 +656,7 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
 // Used to output the winning line in capitals
 // The output will be stored in the move[4] array
 struct move *find_winning_line(board u, char player) {
-  struct move *winningLine = malloc(sizeof(struct move) * 4);
+  struct move *winningLine = calloc(4, sizeof(struct move));
 
   if(winningLine == NULL) {
     fprintf(stderr, "Unable to allocate space to store the winning line for %c\n", player);
@@ -773,7 +792,7 @@ struct move *find_winning_line(board u, char player) {
             int fourthCol = (i - 3) % u->columns;
 
             if(fourthCol < 0) {
-              fourthCol += u->columns;
+              fourthCol += u->columns ;
             }
 
             winningLine[0] = (struct move) { .column = firstCol,  .row = u->rows - start - 1 };
