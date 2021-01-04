@@ -173,8 +173,7 @@ int compareStringsNumeric(const void *a, const void *b) {
   */
 
   // A didn't start with a number but B did
-  if(matchedA <= 0 && matchedB > 0) {
-    //printf("Started A\n");
+  if(matchedA == 0 && matchedB != 0) {
     // B starts with < 0 so A is put ahead of it
     if(scannedNumberFromB < 0) {
       return 1;
@@ -189,8 +188,7 @@ int compareStringsNumeric(const void *a, const void *b) {
   }
 
   // A starts with a number but B doesn't
-  if(matchedA > 0 && matchedB <= 0) {
-    //printf("Started B\n");
+  if(matchedA != 0 && matchedB == 0) {
     // A starts with < 0 so B is put ahead of it
     if(scannedNumberFromA < 0) {
       return -1;
@@ -204,8 +202,7 @@ int compareStringsNumeric(const void *a, const void *b) {
 
   // both have int starts
 
-  if(matchedA > 0 && matchedB > 0) {
-    //printf("Started A and B A:%s B:%s \n", *(char **)a, *(char **)b);
+  if(matchedA != 0 && matchedB != 0) {
     if(scannedNumberFromA > scannedNumberFromB) {
       return 1;
     }
@@ -370,3 +367,5 @@ void write_file_lines(char* fileName, char** outputLines, int lines) {
 
   fclose(fp);
 }
+1. Positive
+-1. Negative
