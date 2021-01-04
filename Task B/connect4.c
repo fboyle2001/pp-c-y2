@@ -13,19 +13,21 @@ void rotate_array(char* array, int length, int shift);
 int apply_gravity(board u);
 void rotate_row(board u, int row, int direction);
 struct diagonal get_diagonal(board u, int row, int column, int direction);
-struct move *find_winning_line(board u, char player);
 
 struct board_structure {
   char** positions;
   int toMove;
   int rows;
   int columns;
+  struct move* oWinningLine;
+  struct move* xWinningLine;
 };
 
 // Used to return the length and data of a diagonal
 struct diagonal {
   char* data;
   int length;
+  struct move* positions;
 };
 
 board setup_board() {
@@ -37,6 +39,8 @@ board setup_board() {
   board->toMove = 0;
   board->rows = 0;
   board->columns = 0;
+  board->oWinningLine = NULL;
+  board->xWinningLine = NULL;
 
   return board;
 }
@@ -49,6 +53,13 @@ void cleanup_board(board u){
 
   free(u->positions);
   u->positions = NULL;
+
+  free(u->oWinningLine);
+  u->oWinningLine = NULL;
+
+  free(u->xWinningLine);
+  u->xWinningLine = NULL;
+
   free(u);
   u = NULL;
 }
@@ -154,6 +165,8 @@ void read_in_file(FILE *infile, board u){
   u->toMove = moveDif; // If moveDif == 0 then it's x, if moveDif == 1 then it's o
   u->rows = numberOfRows;
   u->columns = charactersPerRow;
+  u->xWinningLine = NULL;
+  u->oWinningLine = NULL;
 
   // Now check gravity has already been applied
 
@@ -171,11 +184,11 @@ void write_out_file(FILE *outfile, board u){
   struct move *xWinningLine = NULL;
 
   if(winner == 'x' || winner == 'd') {
-    xWinningLine = find_winning_line(u, 'x');
+    xWinningLine = u->xWinningLine;
   }
 
   if(winner == 'o' || winner == 'd') {
-    oWinningLine = find_winning_line(u, 'o');
+    oWinningLine = u->oWinningLine;
   }
 
   for(int i = 0; i < u->rows; i++) {
@@ -217,11 +230,6 @@ void write_out_file(FILE *outfile, board u){
 
     fputc('\n', outfile);
   }
-
-  free(xWinningLine);
-  xWinningLine = NULL;
-  free(oWinningLine);
-  oWinningLine = NULL;
 }
 
 char next_player(board u){
@@ -239,6 +247,20 @@ char current_winner(board u){
 
   int hasXWon = 0;
   int hasOWon = 0;
+
+  struct move* xWinningLine = calloc(4, sizeof(struct move));
+
+  if(xWinningLine == NULL) {
+    fprintf(stderr, "Unable to allocate space for xWinningLine\n");
+    exit(1);
+  }
+
+  struct move* oWinningLine = calloc(4, sizeof(struct move));
+
+  if(oWinningLine == NULL) {
+    fprintf(stderr, "Unable to allocate space for oWinningLine\n");
+    exit(1);
+  }
 
   char* colData = NULL;
   char lastSeen = '.';
@@ -266,8 +288,16 @@ char current_winner(board u){
         if(run == 4) {
           if(lastSeen == 'x') {
             hasXWon = 1;
+            xWinningLine[0] = (struct move) { .column = col, .row = i - 3 };
+            xWinningLine[1] = (struct move) { .column = col, .row = i - 2 };
+            xWinningLine[2] = (struct move) { .column = col, .row = i - 1 };
+            xWinningLine[3] = (struct move) { .column = col, .row = i     };
           } else if (lastSeen == 'o') {
             hasOWon = 1;
+            oWinningLine[0] = (struct move) { .column = col, .row = i - 3 };
+            oWinningLine[1] = (struct move) { .column = col, .row = i - 2 };
+            oWinningLine[2] = (struct move) { .column = col, .row = i - 1 };
+            oWinningLine[3] = (struct move) { .column = col, .row = i     };
           }
         }
       } else {
@@ -283,6 +313,18 @@ char current_winner(board u){
 
   // Full board is a draw
   if(full == 1) {
+    free(u->xWinningLine);
+    free(u->oWinningLine);
+    
+    u->xWinningLine = NULL;
+    u->oWinningLine = NULL;
+
+    free(xWinningLine);
+    xWinningLine = NULL;
+
+    free(oWinningLine);
+    oWinningLine = NULL;
+
     return 'd';
   }
 
@@ -307,8 +349,16 @@ char current_winner(board u){
         if(run == 4) {
           if(lastSeen == 'x') {
             hasXWon = 1;
+            xWinningLine[0] = (struct move) { .column = i - 3, .row = row };
+            xWinningLine[1] = (struct move) { .column = i - 2, .row = row };
+            xWinningLine[2] = (struct move) { .column = i - 1, .row = row };
+            xWinningLine[3] = (struct move) { .column = i,     .row = row };
           } else if (lastSeen == 'o') {
             hasOWon = 1;
+            oWinningLine[0] = (struct move) { .column = i - 3, .row = row };
+            oWinningLine[1] = (struct move) { .column = i - 2, .row = row };
+            oWinningLine[2] = (struct move) { .column = i - 1, .row = row };
+            oWinningLine[3] = (struct move) { .column = i,     .row = row };
           }
         }
       } else {
@@ -330,8 +380,16 @@ char current_winner(board u){
       if(rowData[start % u->columns] == rowData[(start + 1) % u->columns] && rowData[(start + 1) % u->columns] == rowData[(start + 2) % u->columns] && rowData[(start + 2) % u->columns] == rowData[(start + 3) % u->columns]) {
         if(rowData[start % u->columns] == 'x') {
           hasXWon = 1;
+          xWinningLine[0] = (struct move) { .column = start % u->columns,       .row = row };
+          xWinningLine[1] = (struct move) { .column = (start + 1) % u->columns, .row = row };
+          xWinningLine[2] = (struct move) { .column = (start + 2) % u->columns, .row = row };
+          xWinningLine[3] = (struct move) { .column = (start + 3) % u->columns, .row = row };
         } else if (rowData[start % u->columns] == 'o') {
           hasOWon = 1;
+          oWinningLine[0] = (struct move) { .column = start % u->columns,       .row = row };
+          oWinningLine[1] = (struct move) { .column = (start + 1) % u->columns, .row = row };
+          oWinningLine[2] = (struct move) { .column = (start + 2) % u->columns, .row = row };
+          oWinningLine[3] = (struct move) { .column = (start + 3) % u->columns, .row = row };
         }
       }
     }
@@ -351,8 +409,16 @@ char current_winner(board u){
         if(left_diagonal.data[start] == left_diagonal.data[start + 1] && left_diagonal.data[start + 1] == left_diagonal.data[start + 2] && left_diagonal.data[start + 2] == left_diagonal.data[start + 3]) {
           if(left_diagonal.data[start] == 'x') {
             hasXWon = 1;
+            xWinningLine[0] = (struct move) { .column = left_diagonal.positions[start].column,     .row = left_diagonal.positions[start].row     };
+            xWinningLine[1] = (struct move) { .column = left_diagonal.positions[start + 1].column, .row = left_diagonal.positions[start + 1].row };
+            xWinningLine[2] = (struct move) { .column = left_diagonal.positions[start + 2].column, .row = left_diagonal.positions[start + 2].row };
+            xWinningLine[3] = (struct move) { .column = left_diagonal.positions[start + 3].column, .row = left_diagonal.positions[start + 3].row };
           } else if (left_diagonal.data[start] == 'o') {
             hasOWon = 1;
+            oWinningLine[0] = (struct move) { .column = left_diagonal.positions[start].column,     .row = left_diagonal.positions[start].row     };
+            oWinningLine[1] = (struct move) { .column = left_diagonal.positions[start + 1].column, .row = left_diagonal.positions[start + 1].row };
+            oWinningLine[2] = (struct move) { .column = left_diagonal.positions[start + 2].column, .row = left_diagonal.positions[start + 2].row };
+            oWinningLine[3] = (struct move) { .column = left_diagonal.positions[start + 3].column, .row = left_diagonal.positions[start + 3].row };
           }
         }
       }
@@ -361,6 +427,8 @@ char current_winner(board u){
     // Need to free
     free(left_diagonal.data);
     left_diagonal.data = NULL;
+    free(left_diagonal.positions);
+    left_diagonal.positions = NULL;
 
     struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
 
@@ -370,8 +438,16 @@ char current_winner(board u){
         if(right_diagonal.data[start] == right_diagonal.data[start + 1] && right_diagonal.data[start + 1] == right_diagonal.data[start + 2] && right_diagonal.data[start + 2] == right_diagonal.data[start + 3]) {
           if(right_diagonal.data[start] == 'x') {
             hasXWon = 1;
+            xWinningLine[0] = (struct move) { .column = right_diagonal.positions[start].column,     .row = right_diagonal.positions[start].row     };
+            xWinningLine[1] = (struct move) { .column = right_diagonal.positions[start + 1].column, .row = right_diagonal.positions[start + 1].row };
+            xWinningLine[2] = (struct move) { .column = right_diagonal.positions[start + 2].column, .row = right_diagonal.positions[start + 2].row };
+            xWinningLine[3] = (struct move) { .column = right_diagonal.positions[start + 3].column, .row = right_diagonal.positions[start + 3].row };
           } else if (right_diagonal.data[start] == 'o') {
             hasOWon = 1;
+            oWinningLine[0] = (struct move) { .column = right_diagonal.positions[start].column,     .row = right_diagonal.positions[start].row     };
+            oWinningLine[1] = (struct move) { .column = right_diagonal.positions[start + 1].column, .row = right_diagonal.positions[start + 1].row };
+            oWinningLine[2] = (struct move) { .column = right_diagonal.positions[start + 2].column, .row = right_diagonal.positions[start + 2].row };
+            oWinningLine[3] = (struct move) { .column = right_diagonal.positions[start + 3].column, .row = right_diagonal.positions[start + 3].row };
           }
         }
       }
@@ -380,20 +456,38 @@ char current_winner(board u){
     // Need to free
     free(right_diagonal.data);
     right_diagonal.data = NULL;
+    free(right_diagonal.positions);
+    right_diagonal.positions = NULL;
   }
 
   if(hasXWon == 1 && hasOWon == 1) {
+    free(u->xWinningLine);
+    free(u->oWinningLine);
+    u->xWinningLine = xWinningLine;
+    u->oWinningLine = oWinningLine;
     return 'd';
   }
 
   if(hasXWon == 1) {
+    free(u->xWinningLine);
+    u->xWinningLine = xWinningLine;
+    free(oWinningLine);
+    oWinningLine = NULL;
     return 'x';
   }
 
   if(hasOWon == 1) {
+    free(u->oWinningLine);
+    u->oWinningLine = oWinningLine;
+    free(xWinningLine);
+    xWinningLine = NULL;
     return 'o';
   }
 
+  free(oWinningLine);
+  oWinningLine = NULL;
+  free(xWinningLine);
+  xWinningLine = NULL;
   return '.';
 }
 
@@ -504,6 +598,8 @@ char is_winning_move(struct move m, board u){
   copy->toMove = u->toMove;
   copy->rows = u->rows;
   copy->columns = u->columns;
+  copy->xWinningLine = NULL;
+  copy->oWinningLine = NULL;
 
   // 2. Apply move
   play_move(m, copy);
@@ -648,11 +744,13 @@ void rotate_row(board u, int row, int direction) {
 // Row should always be u->rows - 1
 struct diagonal get_diagonal(board u, int row, int column, int direction) {
   char* diagonal = NULL;
+  struct move *diagonalPositions = NULL;
   int diagonalLength = 0;
 
   while(row != -1) {
     diagonalLength++;
     diagonal = realloc(diagonal, sizeof(char) * diagonalLength);
+    diagonalPositions = realloc(diagonalPositions, sizeof(struct move) * diagonalLength);
 
     if(diagonal == NULL) {
       fprintf(stderr, "Unable to allocate space for the diagonal\n");
@@ -660,6 +758,8 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
     }
 
     diagonal[diagonalLength - 1] = u->positions[row][column];
+    diagonalPositions[diagonalLength - 1] = (struct move) { .row = row, .column = column };
+
     row -= 1;
     column += direction;
     column %= u->columns;
@@ -670,215 +770,6 @@ struct diagonal get_diagonal(board u, int row, int column, int direction) {
     }
   }
 
-  struct diagonal returnDiagonal = { .data = diagonal, .length = diagonalLength };
+  struct diagonal returnDiagonal = { .data = diagonal, .length = diagonalLength, .positions = diagonalPositions };
   return returnDiagonal;
-}
-
-// Finds the indices that define the winning line for a player
-// Used to output the winning line in capitals
-// The output will be stored in the move[4] array
-struct move *find_winning_line(board u, char player) {
-  struct move *winningLine = calloc(4, sizeof(struct move));
-
-  if(winningLine == NULL) {
-    fprintf(stderr, "Unable to allocate space to store the winning line for %c\n", player);
-    exit(1);
-  }
-
-  char* colData = NULL;
-  char lastSeen = '.';
-  int run = 0;
-
-  // Check columns
-  for(int col = 0; col < u->columns; col++) {
-    colData = get_column(u, col);
-
-    for(int i = 0; i < u->rows; i++) {
-      char pos = colData[i];
-
-      // If we are on a run of the same type and it's not blanks
-      if(pos == lastSeen && lastSeen != '.') {
-        // Increment the run
-        run++;
-
-        // If we now have 4 they have won
-        if(run == 4) {
-          if(lastSeen == player) {
-            winningLine[0] = (struct move) { .column = col, .row = i - 3 };
-            winningLine[1] = (struct move) { .column = col, .row = i - 2 };
-            winningLine[2] = (struct move) { .column = col, .row = i - 1 };
-            winningLine[3] = (struct move) { .column = col, .row = i     };
-            free(colData);
-            colData = NULL;
-            return winningLine;
-          }
-        }
-      } else {
-        // Otherwise reset the run
-        lastSeen = pos;
-        run = 1;
-      }
-    }
-
-    free(colData);
-    colData = NULL;
-  }
-
-  char* rowData;
-  lastSeen = '.';
-  run = 0;
-
-  // Check rows need to take with wrapping
-  for(int row = 0; row < u->rows; row++) {
-    rowData = u->positions[row];
-
-    // This handles non-wrapping cases
-    for(int i = 0; i < u->columns; i++) {
-      char pos = rowData[i];
-
-      // If we are on a run of the same type and it's not blanks
-      if(pos == lastSeen && lastSeen != '.') {
-        // Increment the run
-        run++;
-
-        // If we now have 4 they have won
-        if(run == 4) {
-          if(lastSeen == player) {
-            winningLine[0] = (struct move) { .column = i - 3, .row = row };
-            winningLine[1] = (struct move) { .column = i - 2, .row = row };
-            winningLine[2] = (struct move) { .column = i - 1, .row = row };
-            winningLine[3] = (struct move) { .column = i,     .row = row };
-            return winningLine;
-          }
-        }
-      } else {
-        // Otherwise reset the run
-        lastSeen = pos;
-        run = 1;
-      }
-    }
-
-    // Now handle the wrapping cases
-    // The possibilites are [][][][][][][][][]
-    // 0, 1, 2, 3... (No)
-    // Len-1, 0, 1, 2
-    // Len-2, Len-1, 0, 1
-    // Len-3, Len-2, Len-1, 0
-    // ...Len-4, Len-3, Len-2, Len-1 (No)
-
-    for(int start = u->columns - 4; start < u->columns; start++) {
-      if(rowData[start % u->columns] == rowData[(start + 1) % u->columns] && rowData[(start + 1) % u->columns] == rowData[(start + 2) % u->columns] && rowData[(start + 2) % u->columns] == rowData[(start + 3) % u->columns]) {
-        if(rowData[start % u->columns] == player) {
-          winningLine[0] = (struct move) { .column = start % u->columns,       .row = row };
-          winningLine[1] = (struct move) { .column = (start + 1) % u->columns, .row = row };
-          winningLine[2] = (struct move) { .column = (start + 2) % u->columns, .row = row };
-          winningLine[3] = (struct move) { .column = (start + 3) % u->columns, .row = row };
-          return winningLine;
-        }
-      }
-    }
-
-    // Don't free as it is still being used by the board
-  }
-
-  // Finally check diagonals, going to be a bit difficult but no need for wrapping
-  // The get_diagonal will return the diagonals
-
-  for(int i = 0; i < u->columns; i++) {
-    struct diagonal left_diagonal = get_diagonal(u, u->rows - 1, i, -1);
-
-    // If it's less than 4 then they can't win on the diagonal
-    if(left_diagonal.length >= 4) {
-      for(int start = 0; start < left_diagonal.length - 3; start++) {
-        if(left_diagonal.data[start] == left_diagonal.data[start + 1] && left_diagonal.data[start + 1] == left_diagonal.data[start + 2] && left_diagonal.data[start + 2] == left_diagonal.data[start + 3]) {
-          if(left_diagonal.data[start] == player) {
-            int firstCol = i % u->columns;
-
-            if(firstCol < 0) {
-              firstCol += u->columns;
-            }
-
-            int secondCol = (i - 1) % u->columns;
-
-            if(secondCol < 0) {
-              secondCol += u->columns;
-            }
-
-            int thirdCol = (i - 2) % u->columns;
-
-            if(thirdCol < 0) {
-              thirdCol += u->columns;
-            }
-
-            int fourthCol = (i - 3) % u->columns;
-
-            if(fourthCol < 0) {
-              fourthCol += u->columns ;
-            }
-
-            winningLine[0] = (struct move) { .column = firstCol,  .row = u->rows - start - 1 };
-            winningLine[1] = (struct move) { .column = secondCol, .row = u->rows - start - 2 };
-            winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
-            winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
-            free(left_diagonal.data);
-            left_diagonal.data = NULL;
-            return winningLine;
-          }
-        }
-      }
-    }
-
-    free(left_diagonal.data);
-    left_diagonal.data = NULL;
-    struct diagonal right_diagonal = get_diagonal(u, u->rows - 1, i, 1);
-
-    // If it's less than 4 then they can't win on the diagonal
-    if(right_diagonal.length >= 4) {
-      for(int start = 0; start < right_diagonal.length - 3; start++) {
-        if(right_diagonal.data[start] == right_diagonal.data[start + 1] && right_diagonal.data[start + 1] == right_diagonal.data[start + 2] && right_diagonal.data[start + 2] == right_diagonal.data[start + 3]) {
-          if(right_diagonal.data[start] == player) {
-            int firstCol = i % u->columns;
-
-            if(firstCol < 0) {
-              firstCol += u->columns;
-            }
-
-            int secondCol = (i + 1) % u->columns;
-
-            if(secondCol < 0) {
-              secondCol += u->columns;
-            }
-
-            int thirdCol = (i + 2) % u->columns;
-
-            if(thirdCol < 0) {
-              thirdCol += u->columns;
-            }
-
-            int fourthCol = (i + 3) % u->columns;
-
-            if(fourthCol < 0) {
-              fourthCol += u->columns;
-            }
-
-            winningLine[0] = (struct move) { .column = firstCol,  .row = u->rows - start - 1 };
-            winningLine[1] = (struct move) { .column = secondCol, .row = u->rows - start - 2 };
-            winningLine[2] = (struct move) { .column = thirdCol,  .row = u->rows - start - 3 };
-            winningLine[3] = (struct move) { .column = fourthCol, .row = u->rows - start - 4 };
-            free(right_diagonal.data);
-            right_diagonal.data = NULL;
-            return winningLine;
-          }
-        }
-      }
-    }
-
-    // Need to free
-    free(right_diagonal.data);
-    right_diagonal.data = NULL;
-  }
-
-  free(winningLine);
-  winningLine = NULL;
-  return winningLine;
 }

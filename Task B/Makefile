@@ -1,5 +1,5 @@
 all: connect4.o main.o
-	gcc -Wextra -Wall -pedantic -std=c11 connect4.o main.o -o main
+	gcc -Wextra -Wall -pedantic -std=c11 connect4.o main.o -g -o main
 
 main.o: main.c
 	gcc -Wextra -Wall -pedantic -std=c11 -c -g main.c
