@@ -206,6 +206,12 @@ void read_in_file(FILE *infile, board u){
 }
 
 void write_out_file(FILE *outfile, board u){
+  // If the outfile pointer is NULL (e.g. file locked)
+  if(outfile == NULL) {
+    fprintf(stderr, "Unable to open the output file\n");
+    exit(1);
+  }
+
   // Check if someone has won so we can capitialise if necessary
   char winner = current_winner(u);
   struct move *oWinningLine = NULL;
