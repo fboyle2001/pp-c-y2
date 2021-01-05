@@ -24,7 +24,7 @@ int main(){
     }
   }
 
-  printf("%c\n", current_winner(my_board));
+  //printf("%c\n", current_winner(my_board));
   outfile=fopen("final_board.txt","w");
   write_out_file(outfile,my_board);
   fclose(outfile);

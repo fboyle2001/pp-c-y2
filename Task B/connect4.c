@@ -310,6 +310,8 @@ char current_winner(board u){
   // Check columns
   for(int col = 0; col < u->columns; col++) {
     colData = get_column(u, col);
+    run = 0;
+    lastSeen = '.';
 
     for(int i = 0; i < u->rows; i++) {
       char pos = colData[i];
@@ -359,6 +361,8 @@ char current_winner(board u){
   // Check rows need to take with wrapping
   for(int row = 0; row < u->rows; row++) {
     rowData = u->positions[row];
+    run = 0;
+    lastSeen = '.';
 
     // This handles non-wrapping cases
     for(int i = 0; i < u->columns; i++) {
