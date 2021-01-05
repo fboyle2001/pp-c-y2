@@ -76,6 +76,12 @@ void cleanup_board(board u){
 * Need to also determine which player's turn it is
 */
 void read_in_file(FILE *infile, board u){
+  // If the infile pointer is NULL (e.g. file does not exist)
+  if(infile == NULL) {
+    fprintf(stderr, "Unable to read the input file\n");
+    exit(1);
+  }
+
   // Board data
   char **boardData = NULL;
   int numberOfRows = 0;

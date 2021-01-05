@@ -3,7 +3,7 @@ int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("./boards/near_win.txt","r");
+  infile=fopen("./boards/full_draw.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 
@@ -24,6 +24,7 @@ int main(){
     }
   }
 
+  printf("%c\n", current_winner(my_board));
   outfile=fopen("final_board.txt","w");
   write_out_file(outfile,my_board);
   fclose(outfile);
