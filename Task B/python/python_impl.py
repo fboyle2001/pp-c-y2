@@ -65,16 +65,6 @@ def apply_gravity(board):
 
     return board
 
-def rotate_row(row):
-    copy = row[0]
-
-    for i in range(len(row)):
-        temp = row[(i + 1) % len(row)]
-        row[(i + 1) % len(row)] = copy
-        copy = temp
-
-    return row
-
 def make_move(board, player, drop_column, row_to_rotate):
     # full board
     column = get_col(board, drop_column)
@@ -126,10 +116,28 @@ def get_left_diagonal(board, row, column):
 
     return diagonal
 
-print_board(board)
+def rotate_row(row, shift):
+    orig = row[:]
+    copy = row[0]
 
-a = [1, 0, 0, 1, 0]
-shift_to_end(a)
+    for i in range(len(row)):
+        a = (i + shift) % len(row)
+        print(a)
+        temp = row[a]
+        row[a] = orig[i]
+        copy = temp
+
+row = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+print(row)
+rotate_row(row, 1)
+print(row)
+print([2, 3, 4, 5, 6, 7, 8, 9, 1])
+
+# print_board(board)
+
+# a = [1, 0, 0, 1, 0]
+# shift_to_end(a)
 
 # for i in range(columns):
 #     print((5, i), "left", get_left_diagonal(board, 5, i))

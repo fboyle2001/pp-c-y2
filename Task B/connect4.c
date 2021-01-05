@@ -752,20 +752,34 @@ int shift_to_end(char* array, int length) {
   return shiftedTotal;
 }
 
-// Shifts everything one index and wraps
+// Shifts everything by 'shift' and wraps around
 // Affects the array passed to it so returns void
 void rotate_array(char* array, int length, int shift) {
-  // Temp copy of an element
-  char copy = array[0];
-  char temp;
+  char* copy = malloc(length * sizeof(char));
 
-  // Move everything round by shift
-  // Take a copy of the element we overwrite
+  // Copy the array so we can use its values when rotating
   for(int i = 0; i < length; i++) {
-    temp = array[(i + shift) % length];
-    array[(i + shift) % length] = copy;
-    copy = temp;
+    copy[i] = array[i];
   }
+
+  // Will store the new index
+  int shifted;
+
+  for(int i = 0; i < length; i++) {
+    // Calculate the new index
+    shifted = (i + shift) % length;
+
+    // % doesn't wrap the negative values so do it manually
+    if(shifted < 0) {
+      shifted += length;
+    }
+
+    // Update the array in place
+    array[shifted] = copy[i];
+  }
+
+  // Free the copy we made
+  free(copy);
 
   // Affects the char* passed in so don't return
 }
