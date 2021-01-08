@@ -3,7 +3,7 @@ int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("./boards/full_draw.txt","r");
+  infile=fopen("./boards/o_first.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 

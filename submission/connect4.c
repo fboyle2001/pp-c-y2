@@ -33,6 +33,11 @@ struct diagonal {
 board setup_board() {
   board board = malloc(sizeof(*board));
 
+  if(board == NULL) {
+    fprintf(stderr, "Unable to allocate space for the board pointer\n");
+    exit(1);
+  }
+
   board->positions = NULL;
   board->toMove = 0;
   board->rows = 0;
@@ -76,6 +81,12 @@ void cleanup_board(board u){
 * Need to also determine which player's turn it is
 */
 void read_in_file(FILE *infile, board u){
+  // If the infile pointer is NULL (e.g. file does not exist)
+  if(infile == NULL) {
+    fprintf(stderr, "Unable to read the input file\n");
+    exit(1);
+  }
+
   // Board data
   char **boardData = NULL;
   int numberOfRows = 0;
@@ -200,6 +211,12 @@ void read_in_file(FILE *infile, board u){
 }
 
 void write_out_file(FILE *outfile, board u){
+  // If the outfile pointer is NULL (e.g. file locked)
+  if(outfile == NULL) {
+    fprintf(stderr, "Unable to open the output file\n");
+    exit(1);
+  }
+
   // Check if someone has won so we can capitialise if necessary
   char winner = current_winner(u);
   struct move *oWinningLine = NULL;
@@ -304,6 +321,8 @@ char current_winner(board u){
   // Check columns
   for(int col = 0; col < u->columns; col++) {
     colData = get_column(u, col);
+    run = 0;
+    lastSeen = '.';
 
     for(int i = 0; i < u->rows; i++) {
       char pos = colData[i];
@@ -353,6 +372,8 @@ char current_winner(board u){
   // Check rows need to take with wrapping
   for(int row = 0; row < u->rows; row++) {
     rowData = u->positions[row];
+    run = 0;
+    lastSeen = '.';
 
     // This handles non-wrapping cases
     for(int i = 0; i < u->columns; i++) {
@@ -757,6 +778,11 @@ int shift_to_end(char* array, int length) {
 void rotate_array(char* array, int length, int shift) {
   char* copy = malloc(length * sizeof(char));
 
+  if(copy == NULL) {
+    fprintf(stderr, "Unable to allocate space for the copy of the row to rotate\n");
+    exit(1);
+  }
+
   // Copy the array so we can use its values when rotating
   for(int i = 0; i < length; i++) {
     copy[i] = array[i];
@@ -780,6 +806,7 @@ void rotate_array(char* array, int length, int shift) {
 
   // Free the copy we made
   free(copy);
+  copy = NULL;
 
   // Affects the char* passed in so don't return
 }

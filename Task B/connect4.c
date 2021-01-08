@@ -33,6 +33,11 @@ struct diagonal {
 board setup_board() {
   board board = malloc(sizeof(*board));
 
+  if(board == NULL) {
+    fprintf(stderr, "Unable to allocate space for the board pointer\n");
+    exit(1);
+  }
+
   board->positions = NULL;
   board->toMove = 0;
   board->rows = 0;
@@ -773,6 +778,11 @@ int shift_to_end(char* array, int length) {
 void rotate_array(char* array, int length, int shift) {
   char* copy = malloc(length * sizeof(char));
 
+  if(copy == NULL) {
+    fprintf(stderr, "Unable to allocate space for the copy of the row to rotate\n");
+    exit(1);
+  }
+
   // Copy the array so we can use its values when rotating
   for(int i = 0; i < length; i++) {
     copy[i] = array[i];
@@ -796,6 +806,7 @@ void rotate_array(char* array, int length, int shift) {
 
   // Free the copy we made
   free(copy);
+  copy = NULL;
 
   // Affects the char* passed in so don't return
 }
