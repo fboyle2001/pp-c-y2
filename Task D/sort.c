@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <locale.h>
 
 /*
 * Should accept many files
@@ -21,6 +22,9 @@ int compareStringsNumeric(const void *a, const void *b);
 int compareStringsNumericReverse(const void *a, const void *b);
 
 int main(int argc, char** argv) {
+  // Resolves issue with locale differences affecting GNU sort
+  setlocale(LC_ALL, "");
+
   // Going to read the data into here
   char** inputLines = NULL;
   int totalInputLines = 0;
