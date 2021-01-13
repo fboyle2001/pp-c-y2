@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <locale.h>
 
 /*
 * Should accept many files
@@ -21,6 +22,10 @@ int compareStringsNumeric(const void *a, const void *b);
 int compareStringsNumericReverse(const void *a, const void *b);
 
 int main(int argc, char** argv) {
+  // Resolves issue with locale differences affecting GNU sort
+  // Takes the environment's locale
+  setlocale(LC_ALL, "");
+
   // Going to read the data into here
   char** inputLines = NULL;
   int totalInputLines = 0;
@@ -165,9 +170,9 @@ int main(int argc, char** argv) {
 }
 
 int compareStrings(const void *a, const void *b) {
-  // Just use strcmp to do the comparison
+  // Just use strcoll to do the comparison. Prefer strcoll over strcmp as it respects locale
   // the cast is void *a -> char **a then dereference char **a to get the char* which is the string
-  return strcmp(*(char **)a, *(char **)b);
+  return strcoll(*(char **)a, *(char **)b);
 }
 
 int compareStringsReverse(const void *a, const void *b) {
@@ -179,7 +184,7 @@ int compareStringsNumeric(const void *a, const void *b) {
   /*
   * 1. Extract the number from the front
   * 2. Compare them
-  * 3. If they are equal return strcmp(a, b) instead
+  * 3. If they are equal return strcoll(a, b) instead
   */
   int scannedNumberFromA;
   int matchedA = sscanf(*(char **)a, "%d", &scannedNumberFromA);
@@ -204,7 +209,7 @@ int compareStringsNumeric(const void *a, const void *b) {
       return -1;
     }
 
-    // Otherwise go to compare by strcmp like normal
+    // Otherwise go to compare by strcoll like normal
   }
 
   // A starts with a number but B doesn't
@@ -240,7 +245,7 @@ int compareStringsNumeric(const void *a, const void *b) {
 
   // otherwise compare normally
 
-  return strcmp(*(char **)a, *(char **)b);
+  return strcoll(*(char **)a, *(char **)b);
 }
 
 int compareStringsNumericReverse(const void *a, const void *b) {
