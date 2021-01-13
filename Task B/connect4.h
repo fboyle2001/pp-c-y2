@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 typedef struct board_structure *board;
 
 struct move{

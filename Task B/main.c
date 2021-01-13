@@ -1,9 +1,10 @@
+#include<stdio.h>
 #include"connect4.h"
 int main(){
   FILE *infile,*outfile;
 
   board my_board=setup_board();
-  infile=fopen("./boards/o_first.txt","r");
+  infile=fopen("./boards/initial_board.txt","r");
   read_in_file(infile,my_board);
   fclose(infile);
 
